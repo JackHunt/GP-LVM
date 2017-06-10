@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-import gplvm
+import linear_gplvm as lgp
 
 if __name__ == "__main__":
-    gplvm = gplvm.GPLVM()
-    gplvm.hello()
+    gplvm = lgp.LinearGPLVM()
+    gplvm.hello_base()
