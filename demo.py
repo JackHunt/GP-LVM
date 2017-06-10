@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import sys
-sys.path.append('./gplvm_lib')
+sys.path.insert(0, './gplvm_lib')
 
 import linear_gplvm as lgp
 import nonlinear_gplvm as nlgp
