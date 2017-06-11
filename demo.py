@@ -15,7 +15,7 @@ irisFname = 'iris.data'
 showPlots = True
 savePlots = False
 
-def getIris():
+def getIris(useColouring = True):
     """
     Loads the four dimensional Fisher Iris dataset.
     If the 'iris.data' file is not present in the working directory, 
@@ -23,6 +23,7 @@ def getIris():
     The last column of the dataset(the text labels) are ommitted.
     """
     iris = []
+    colours = []
     if not os.path.isfile(irisFname):
         print("Attempting to download the iris dataset.")
         try:
@@ -34,19 +35,30 @@ def getIris():
         reader = csv.reader(file, delimiter = ',')
         for line in reader:
             if len(line) != 0:
+                #Extract feature vector.
                 iris.append(list(map(float, line[0:4])))
-    return np.asarray(iris)
+                #Extract class label and assign colour, if necessary.
+                if useColouring:
+                    if line[4] == "Iris-setosa":
+                        colours.append("red")
+                    elif line[4] == "Iris-versicolor":
+                        colours.append("green")
+                    elif line[4] == "Iris-virginica":
+                        colours.append("blue")
+                    else:
+                        sys.exit("Error reading class assignments. Check iris.data")
+    return {'features' : np.asarray(iris), 'colours' : colours}
 
-def plot(data, dimensionality, title, method):
+def plot(data, colours, dimensionality, title, method):
     """
     Helper function to reduce code duplication.
     """
     if dimensionality == 1:
         gp.plot1D(data, title, method, savePlots)
     elif dimensionality == 2:
-        gp.plot2D(data, title, method, savePlots)
+        gp.plot2D(data, title, method, colours, savePlots)
     elif dimensionality == 3:
-        gp.plot3D(data, title, method, savePlots)
+        gp.plot3D(data, title, method, colours, savePlots)
     else:
         return None
     
@@ -56,8 +68,8 @@ def runPCA(data, reducedDimensions, showScree):
     Scree plot(normalised Eigenvalues)
     """
     print("-->Running PCA.")
-    latent = gp.pca(data, reducedDimensions, showScree, savePlots)
-    plot(latent, reducedDimensions, "Iris Dataset", "PCA")
+    latent = gp.pca(data['features'], reducedDimensions, showScree, savePlots)
+    plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "PCA")
     
 def runLinearGPLVM(data, reducedDimensions, beta):
     """
@@ -65,10 +77,10 @@ def runLinearGPLVM(data, reducedDimensions, beta):
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
     print("-->Running Linear GP-LVM.")
-    gplvm = gp.LinearGPLVM(data)
+    gplvm = gp.LinearGPLVM(data['features'])
     gplvm.compute(reducedDimensions, beta)
     latent = gplvm.getLatentSpaceRepresentation()
-    plot(latent, reducedDimensions, "Iris Dataset", "Linear GP-LVM")
+    plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "Linear GP-LVM")
     
 def runNonlinearGPLVM():
     """
@@ -83,9 +95,15 @@ if __name__ == "__main__":
     Parameters of the algorithms may be tweaked here.
     """
     
-    newDimensionality = 2 #Dimension to reduce to.
-    beta = 2.0 #Beta parameter for Linear GP-LVM.
-    scree = True #Whether to display the Scree plot for PCA.
+    #Dimension to reduce to.
+    newDimensionality = 3
+    
+    #Beta parameter for Linear GP-LVM.
+    beta = 2.0
+    
+    #Whether to display the Scree plot for PCA.
+    scree = True
+    
     data = getIris()
     
     runPCA(data, newDimensionality, scree)

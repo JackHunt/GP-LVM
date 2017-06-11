@@ -32,11 +32,11 @@ def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
     
     #Plot, if requested.
     if showScree:
-        __plotScree(eigVals, saveScree)
+        __plotScree(eigVals, sortedIndices, numPrincipalComponents, saveScree)
     
     return X_reduced
     
-def __plotScree(eigVals, savePlot = False):
+def __plotScree(eigVals, sortedIndices, numPrincipalComponents, savePlot = False):
     """
     Displays a scree plot(sorted and normalised Eigenvalues).
     Optionally, one can save the plot to a file named 'scree.png'
@@ -46,9 +46,9 @@ def __plotScree(eigVals, savePlot = False):
     eigSum = np.sum(eigVals)
     
     #Plot.
-    x = np.array(range(1, eigVals.size + 1))
+    x = np.array(range(1, numPrincipalComponents + 1))
     plt.figure()
-    plt.plot(x, eigVals)
+    plt.plot(x, eigVals[sortedIndices][0:numPrincipalComponents])
     plt.xticks(x)
     plt.xlabel("Sorted Eigenvalue IDs")
     plt.ylabel("Normalised Eigenvalues")
