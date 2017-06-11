@@ -5,10 +5,15 @@ import urllib.request
 import os.path
 import csv
 import numpy as np
+import matplotlib.pyplot as plt
 import gplvm_lib as gp
 
 irisURL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
 irisFname = 'iris.data'
+
+#Control plotting here.
+showPlots = True
+savePlots = True
 
 def getIris():
     """
@@ -32,20 +37,38 @@ def getIris():
                 iris.append(list(map(float, line[0:4])))
     return np.asarray(iris)
 
+def plot(data, dimensionality, title, method):
+    """
+    Helper function to reduce code duplication.
+    """
+    if dimensionality == 1:
+        gp.plot1D(data, title, method, savePlots)
+    elif dimensionality == 2:
+        gp.plot2D(data, title, method, savePlots)
+    elif dimensionality == 3:
+        gp.plot3D(data, title, method, savePlots)
+    else:
+        return None
+    
 def runPCA(data, reducedDimensions, showScree):
     """
     Runs standard PCA on the given dataset, optionally showing the associated 
     Scree plot(normalised Eigenvalues)
     """
-    gp.pca(data, reducedDimensions, showScree)
+    print("-->Running PCA.")
+    latent = gp.pca(data, reducedDimensions, showScree, savePlots)
+    plot(latent, reducedDimensions, "Iris Dataset", "PCA")
     
 def runLinearGPLVM(data, reducedDimensions, beta):
     """
     Runs the Linear Gaussian Process Latent Variable Model on the given dataset. 
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
+    print("-->Running Linear GP-LVM.")
     gplvm = gp.LinearGPLVM(data)
     gplvm.compute(reducedDimensions, beta)
+    latent = gplvm.getLatentSpaceRepresentation()
+    plot(latent, reducedDimensions, "Iris Dataset", "Linear GP-LVM")
     
 def runNonlinearGPLVM():
     """
@@ -53,7 +76,7 @@ def runNonlinearGPLVM():
     for a given covariance matrix generating kernel.
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
-    pass
+    print("-->Running Nonlinear GPLVM.")
     
 if __name__ == "__main__":
     """
@@ -68,3 +91,6 @@ if __name__ == "__main__":
     runPCA(data, newDimensionality, scree)
     runLinearGPLVM(data, newDimensionality, beta)
     runNonlinearGPLVM()
+    
+    if showPlots:
+        plt.show()

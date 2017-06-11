@@ -40,7 +40,7 @@ class LinearGPLVM(GPLVM):
         L = np.diag(lVec)
         
         #Arbitrary rotation matrix.
-        V = np.eye(reducedDimensionality)
+        V = np.eye(reducedDimensionality)*5
         
         #Finally, compute latent space representation - X = U*L*V^t.
         self._X = np.dot(eigVecsYYt[:, sortedIndicesYYt[0:reducedDimensionality]], np.dot(L, V.transpose()))

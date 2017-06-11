@@ -27,7 +27,7 @@ class GPLVM(ABC):
         """
         Returns the most recently computed latent space representation of the data.
         """
-        return _X
+        return self._X
     
     @abstractmethod
     def compute(self, reducedDimensionality, beta):

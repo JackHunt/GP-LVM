@@ -47,6 +47,7 @@ def __plotScree(eigVals, savePlot = False):
     
     #Plot.
     x = np.array(range(1, eigVals.size + 1))
+    plt.figure()
     plt.plot(x, eigVals)
     plt.xticks(x)
     plt.xlabel("Sorted Eigenvalue IDs")
@@ -55,5 +56,5 @@ def __plotScree(eigVals, savePlot = False):
     plt.grid(True)
     if savePlot:
         plt.savefig("scree.png")
-    plt.show()
+    #plt.show()
     
