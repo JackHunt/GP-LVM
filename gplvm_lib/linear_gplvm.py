@@ -27,16 +27,16 @@ class LinearGPLVM(GPLVM):
         
         #Compute eigendecomposition of Y*Y^t and sort.
         eigValsYYt, eigVecsYYt = np.linalg.eig(YYt)
-        sortedIndicesYYt = eigValsYYt.argsort()
+        sortedIndicesYYt = eigValsYYt.argsort()[::-1]
         
         #Compute eigendecomposition of Y*Y^t and sort.
         eigValsDYYt, eigVecsDYYt = np.linalg.eig((1.0 / D) * YYt)
-        sortedIndicesDYYt = eigValsDYYt.argsort()
+        sortedIndicesDYYt = eigValsDYYt.argsort()[::-1]
         
         #Construct L matrix.
         lVec = eigValsDYYt[sortedIndicesDYYt[0:reducedDimensionality]]
         lVec -= 1.0 / beta
-        lVec = np.sqrt(lVec)
+        lVec = 1.0 / np.sqrt(lVec)
         L = np.diag(lVec)
         
         #Arbitrary rotation matrix.

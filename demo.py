@@ -13,7 +13,7 @@ irisFname = 'iris.data'
 
 #Control plotting here.
 showPlots = True
-savePlots = True
+savePlots = False
 
 def getIris():
     """

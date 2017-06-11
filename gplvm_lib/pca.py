@@ -25,7 +25,7 @@ def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
     
     #Get the eigendecomposition of the covariance matrix and sort.
     eigVals, eigVecs = np.linalg.eig(cov)
-    sortedIndices = eigVals.argsort()
+    sortedIndices = eigVals.argsort()[::-1]
     
     #Reduce dimensionality.
     X_reduced = np.dot(X, eigVecs[:, sortedIndices[0:numPrincipalComponents]])
