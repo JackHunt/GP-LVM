@@ -10,7 +10,10 @@ class GPLVM(ABC):
     Lawrence 2005
     """
     
+    #Original data.
     _Y = np.array([])
+    
+    #Latent space representation.
     _X = np.array([])
     
     def __init__(self, Y):
