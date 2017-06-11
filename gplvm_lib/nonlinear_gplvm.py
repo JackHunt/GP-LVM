@@ -12,8 +12,8 @@ class NonlinearGPLVM(GPLVM):
         """
         super().__init__(Y)
     
-    def compute(self):
+    def compute(self, reducedDimensionality, beta):
         """
-        Method to compute latent spaces with a linear GP-LVM.
+        Method to compute latent spaces with a nonlinear GP-LVM.
         """
         pass

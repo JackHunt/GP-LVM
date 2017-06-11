@@ -30,7 +30,7 @@ class GPLVM(ABC):
         return _X
     
     @abstractmethod
-    def compute(self, reducedDimensionality):
+    def compute(self, reducedDimensionality, beta):
         """
         Abstract method to compute latent spaces with a GP-LVM.
         """
