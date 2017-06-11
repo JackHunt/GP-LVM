@@ -32,11 +32,11 @@ def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
     
     #Plot, if requested.
     if showScree:
-        plotScree(eigVals, saveScree)
+        __plotScree(eigVals, saveScree)
     
     return X_reduced
     
-def plotScree(eigVals, savePlot = False):
+def __plotScree(eigVals, savePlot = False):
     """
     Displays a scree plot(sorted and normalised Eigenvalues).
     Optionally, one can save the plot to a file named 'scree.png'
