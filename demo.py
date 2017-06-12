@@ -13,7 +13,7 @@ irisFname = 'iris.data'
 
 #Control plotting here.
 showPlots = True
-savePlots = True
+savePlots = False
 
 def getIris(useColouring = True):
     """
@@ -82,13 +82,15 @@ def runLinearGPLVM(data, reducedDimensions, beta):
     latent = gplvm.getLatentSpaceRepresentation()
     plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "Linear GP-LVM")
     
-def runNonlinearGPLVM():
+def runNonlinearGPLVM(data, reducedDimensions):
     """
     Runs the Nonlinear Gaussian Process Latent Variable Model on the given dataset, 
     for a given covariance matrix generating kernel.
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
     print("-->Running Nonlinear GPLVM.")
+    gplvm = gp.NonlinearGPLVM(data['features'])
+    gplvm.compute(reducedDimensions)
     
 if __name__ == "__main__":
     """
@@ -106,9 +108,9 @@ if __name__ == "__main__":
     
     data = getIris()
     
-    runPCA(data, newDimensionality, scree)
-    runLinearGPLVM(data, newDimensionality, beta)
-    runNonlinearGPLVM()
+#    runPCA(data, newDimensionality, scree)
+#    runLinearGPLVM(data, newDimensionality, beta)
+    runNonlinearGPLVM(data, newDimensionality)
     
     if showPlots:
         plt.show()

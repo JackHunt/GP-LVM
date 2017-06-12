@@ -12,6 +12,9 @@ class GPLVM(ABC):
     
     #Original data.
     _Y = np.array([])
+
+    #Y*Y^t - cached Y*Yt to reduce repeated computation.
+    _YYt = np.array([])
     
     #Latent space representation.
     _X = np.array([])
@@ -25,7 +28,14 @@ class GPLVM(ABC):
         if Y.shape[0] == 0:
             raise ValueError("Cannot compute a GP-LVM on an empty data matrix.")
         self._Y = Y
-    
+
+    def _computeYYt(self):
+        if self._YYt.shape[0] == 0:
+            self._YYt = np.dot(self._Y, self._Y.transpose())
+
+        if self._YYt.shape[0] != self._Y.shape[0] or self._YYt.shape[0] != self._Y.shape[0]:
+            raise ValueError("Mismatch between data matrix Y and YY^t. Have you changed data matrix externally?")
+        
     def getLatentSpaceRepresentation(self):
         """
         Returns the most recently computed latent space representation of the data.
@@ -33,7 +43,7 @@ class GPLVM(ABC):
         return self._X
     
     @abstractmethod
-    def compute(self, reducedDimensionality, beta):
+    def compute(self, reducedDimensionality):
         """
         Abstract method to compute latent spaces with a GP-LVM.
         """
