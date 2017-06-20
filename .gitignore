@@ -5,3 +5,5 @@ iris.data
 *.png
 #*#
 *.pyproj
+*.suo
+*.sln
