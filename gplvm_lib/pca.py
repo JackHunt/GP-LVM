@@ -32,7 +32,7 @@ def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
     
     #Plot, if requested.
     if showScree:
-        __plotScree(eigVals, sortedIndices, numPrincipalComponents, saveScree)
+        __plotScree(eigVals, sortedIndices[::-1], numPrincipalComponents, saveScree)
     
     return X_reduced
     

@@ -108,8 +108,8 @@ if __name__ == "__main__":
     
     data = getIris()
     
-#    runPCA(data, newDimensionality, scree)
-#    runLinearGPLVM(data, newDimensionality, beta)
+    runPCA(data, newDimensionality, scree)
+    runLinearGPLVM(data, newDimensionality, beta)
     runNonlinearGPLVM(data, newDimensionality)
     
     if showPlots:
