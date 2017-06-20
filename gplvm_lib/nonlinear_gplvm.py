@@ -10,7 +10,7 @@ class NonlinearGPLVM(GPLVM):
     __kernel = RadialBasisFunction()
     __params = {'gamma' : 1.0, 'theta' : 1.0}
     __initLatent = np.array([])
-    
+
     def __init__(self, Y):
         """
         NoninearGPLVM class constructor.
@@ -24,12 +24,12 @@ class NonlinearGPLVM(GPLVM):
         """
         if len(list(params.keys())) != len(kernel.hyperparameters):
             raise ValueError("Number of hyperparameters provided must match that required by the kernel.")
-        
+
         for var in list(params.keys()):
             if var not in kernel.hyperparameters:
                 raise ValueError("Hyperparameters must match those of the given kernel.")
-        self.__kernel = kernel;
-        self.__params = params;
+        self.__kernel = kernel
+        self.__params = params
 
     def compute(self, reducedDimensionality, maxIterations = 150, minStep = 1e-5, learnRate = 0.001, verbose = True):
         """
@@ -44,12 +44,16 @@ class NonlinearGPLVM(GPLVM):
         #Initialise with PCA if not already and make copy of initial latent space.
         tmpLatent = self.__initialiseLatent(reducedDimensionality)
         self._X = np.copy(self.__initLatent)
+
+        #Initialise steps.
+        latentStep = 1e5
+        hyperStep = 1e5
         
         #Optimise for latent space.
         for iter in range(0, maxIterations):
             #Compute covariance matrix of PCA reduced data and it's inverse.
-            K = np.array([self.__kernel.f(a, b, self.__params) for a in self.__initLatent for b in self.__initLatent])
-            K = K.reshape((self.__initLatent.shape[0], self.__initLatent.shape[0]))
+            K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
+            K = K.reshape((self._X.shape[0], self._X.shape[0]))
             K_inv = np.linalg.inv(K)
 
             #Compute Y*Y^t if not already computed, else use cached version.
@@ -59,20 +63,20 @@ class NonlinearGPLVM(GPLVM):
             #E = self.__energy(K)
             E = 0
 
-            #Compute gradients.
+            #Compute partial derivatives.
             grads = self.__energyDeriv(K_inv)
-            dLda = 
 
-            #Update latent space.
-            #self._X = np.subtract(self._X, learnRate * np.array([dict['a'] for dict in nabla]))
-            
-            #Update hyperparameters - TO:DO Make more pythonic.
+            #Update latent variables.
+            if latentStep > minStep:
+                latentStep = self.__updateLatentVariables(grads, K.shape[0], reducedDimensionality, learnRate)
+
+            #Update hyperparameters.
+            if hyperStep > minStep:
+                hyperStep = self.__updateHyperparameters(grads, K.shape[0], learnRate)
 
             #Progress report and early out if converged.
             if verbose:
-                print("Iteration: %s Reversed KL: %s Step L2: %s" % (iter, E, stepNorm))
-            if stepNorm < minStep:
-                break
+                print("Iteration: %s Reversed KL: %s Latent step L2: %s Hyper step L2: %s" % (iter, E, latentStep, hyperStep))
 
     def __initialiseLatent(self, reducedDimensionality):
         if self.__initLatent.shape[0] == 0 or self.__initLatent.shape[1] != reducedDimensionality:
@@ -101,3 +105,18 @@ class NonlinearGPLVM(GPLVM):
         dK = [self.__kernel.df(a, b, self.__params) for a in self.__initLatent for b in self.__initLatent]        
 
         return (dLdK, dK)
+
+    def __updateLatentVariables(self, grads, N, Q, learnRate):
+        #Compute gradients w.r.t latent variables and update.
+        dLda = np.array([grad['a'] for grad in grads[1]]).reshape(N, N, Q)
+        for i in range(0, Q):
+            dL = grads[0] * dLda[:, :, i]
+            self._X[:, i] = self._X[:, i] - 0.5 * learnRate * (2 * dL.sum(axis=1) - dL.diagonal())
+        return 1.0
+
+    def __updateHyperparameters(self, grads, N, learnRate):
+        #Compute gradients w.r.t hyperparameters and update.
+        for hyp in self.__kernel.hyperparameters:
+            dL = grads[0] * np.array([d[hyp] for d in grads[1]]).reshape(N, N)
+            self.__params[hyp] = self.__params[hyp] - learnRate * dL.trace()
+        return 1.0

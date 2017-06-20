@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import sys
 sys.path.insert(0, './gplvm_lib')
 import urllib.request
@@ -64,7 +63,7 @@ def plot(data, colours, dimensionality, title, method):
     
 def runPCA(data, reducedDimensions, showScree):
     """
-    Runs standard PCA on the given dataset, optionally showing the associated 
+    Runs standard PCA on the given dataset, optionally showing the associated
     Scree plot(normalised Eigenvalues)
     """
     print("-->Running PCA.")
@@ -108,8 +107,8 @@ if __name__ == "__main__":
     
     data = getIris()
     
-#    runPCA(data, newDimensionality, scree)
-#    runLinearGPLVM(data, newDimensionality, beta)
+    #runPCA(data, newDimensionality, scree)
+    #runLinearGPLVM(data, newDimensionality, beta)
     runNonlinearGPLVM(data, newDimensionality)
     
     if showPlots:
