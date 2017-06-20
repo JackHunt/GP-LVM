@@ -60,17 +60,13 @@ class NonlinearGPLVM(GPLVM):
             E = 0
 
             #Compute gradients.
-            nabla = self.__energyDeriv(K_inv)
+            grads = self.__energyDeriv(K_inv)
+            dLda = 
 
             #Update latent space.
-            self._X = np.subtract(self._X, learnRate * np.array([dict['a'] for dict in nabla]))
+            #self._X = np.subtract(self._X, learnRate * np.array([dict['a'] for dict in nabla]))
             
             #Update hyperparameters - TO:DO Make more pythonic.
-            hypGrad = {}
-            for grad in nabla:
-                for var in grad.keys():
-                    if var in self.__kernel.hyperparameters:
-                        hypGrad[var] += grad[var]
 
             #Progress report and early out if converged.
             if verbose:
@@ -100,13 +96,8 @@ class NonlinearGPLVM(GPLVM):
         
         #Compute dL/dK - Reverse KL Divergence diff w.r.t kernel.
         dLdK = np.subtract(np.dot(K_inv, np.dot(self._YYt, K_inv)), D * K_inv)
-        dLdK = dLdK.reshape(K_inv.shape[0] * K_inv.shape[1])
     
         #Compute kernel partial derivatives.
-        dK = [self.__kernel.df(a, b, self.__params) for a in self.__initLatent for b in self.__initLatent]
+        dK = [self.__kernel.df(a, b, self.__params) for a in self.__initLatent for b in self.__initLatent]        
 
-        #Apply chain rule - reuse dK.
-        for d, dict in zip(dLdK, dK):
-            dict.update((key, val * d) for key, val in dict.items())
-        
-        return dK
+        return (dLdK, dK)
