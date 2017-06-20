@@ -30,7 +30,7 @@ class Kernel(ABC):
         self.__checkValid(a, b, params)
 
     @abstractmethod
-    def df(self, a, b, params, var):
+    def df(self, a, b, params):
         """
         Abstract method to evaluate a covariance matrix derivative entry for two given vectors and hyperparameter set.
         """
@@ -51,5 +51,11 @@ class RadialBasisFunction(Kernel):
         diff = a - b
         return params['theta'] * np.exp((-params['gamma'] / 2.0) * np.dot(diff.transpose(), diff))
 
-    def df(self, a, b, params, var):
-        super().df(a, b, params, var)
+    def df(self, a, b, params):
+        super().df(a, b, params)
+        dist = np.dot((a - b).transpose(), (a - b))
+        dFdS = np.exp(-0.5 * params['gamma'] * dist)
+        dFdG = params['sigma'] * dist * np.exp(-0.5 * params['gamma'] * dist)
+        dFdA = -1.0 * sigma * gamma * (a - b) * np.exp(-0.5 * gamma * dist)
+
+        return {"a" : dFDA, "sigma" : sigma, "gamma" : gamma}

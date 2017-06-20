@@ -46,7 +46,13 @@ class NonlinearGPLVM(GPLVM):
         #Compute covariance matrix of PCA reduced data and it's inverse.
         K = np.array([self.__kernel.f(x, y, self.__params) for x in tmpLatent for y in tmpLatent])
         K = K.reshape((tmpLatent.shape[0], tmpLatent.shape[0]))
-#        K_inv = np.linalg.inv(K)
+        K_inv = np.linalg.inv(K)
 
         #Compute Y*Y^t if not already computed, else use cached version.
         self._computeYYt()
+
+        def __energy(self):
+            pass
+
+        def __energyDeriv(self):
+            pass
