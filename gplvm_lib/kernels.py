@@ -58,4 +58,4 @@ class RadialBasisFunction(Kernel):
         dFdG = params['sigma'] * dist * np.exp(-0.5 * params['gamma'] * dist)
         dFdA = -1.0 * sigma * gamma * (a - b) * np.exp(-0.5 * gamma * dist)
 
-        return {"a" : dFDA, "sigma" : sigma, "gamma" : gamma}
+        return {"a" : dFdA, "sigma" : dFdS, "gamma" : dFdG}

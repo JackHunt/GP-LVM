@@ -47,5 +47,5 @@ class GPLVM(ABC):
         """
         Abstract method to compute latent spaces with a GP-LVM.
         """
-        if reducedDimensionality > self._Y.shape[1]:
+        if reducedDimensionality >= self._Y.shape[1]:
             raise ValueError("Cannot reduce %s dimensional data to %d dimensions." % (self._Y.shape[1], reducedDimensionality))
