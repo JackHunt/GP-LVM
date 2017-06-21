@@ -40,7 +40,7 @@ class NonlinearGPLVM(GPLVM):
     """
 
     __kernel_initial = RadialBasisFunction()
-    __params_initial = {'gamma' : 2.0, 'theta' : 2.0}
+    __params_initial = {'gamma' : 4.0, 'theta' : 4.0}
     __kernel = __kernel_initial
     __params = __params_initial
     __initLatent = np.array([])
@@ -66,7 +66,7 @@ class NonlinearGPLVM(GPLVM):
         self.__kernel = kernel
         self.__params = params
 
-    def compute(self, reducedDimensionality, batchSize, maxIterations = 150, minStep = 1e-6, learnRate = 0.001, momentum = 0.001, verbose = True):
+    def compute(self, reducedDimensionality, batchSize, jitter = 1, maxIterations = 150, minStep = 1e-6, learnRate = 0.001, momentum = 0.001, verbose = True):
         """
         Method to compute latent spaces with a nonlinear GP-LVM.
         Training is performed using Stochatic Gradient Descent.
@@ -87,7 +87,7 @@ class NonlinearGPLVM(GPLVM):
             #Compute covariance matrix of PCA reduced data and it's pseudoinverse.
             K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
             K = K.reshape((self._X.shape[0], self._X.shape[0]))
-            K += np.eye(self._X.shape[0])*5
+            K += np.eye(self._X.shape[0])*jitter
             K_inv = np.linalg.pinv(K)
 
             #Compute Y*Y^t if not already computed, else use cached version.
