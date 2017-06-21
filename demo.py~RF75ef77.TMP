@@ -46,21 +46,14 @@ def getIris(useColouring = True):
                         colours.append("blue")
                     else:
                         sys.exit("Error reading class assignments. Check iris.data")
-    
     #Randomise order - TO-DO: make this pythonic.
     for iter in range(0, 20):
-        randA = np.random.randint(len(iris), size = len(iris))
-        randB = np.random.randint(len(iris), size = len(iris))
-        for i in range(0, len(iris)):
-            #Permute feature vectors.
+        randA = np.random.randint(iris.shape[0])
+        randB = np.random.randint(iris.shape[0])
+        for i in range(0, iris.shape[0]):
             tmp = iris[randA[i]]
             iris[randA[i]] = iris[randB[i]]
             iris[randA[i]] = tmp
-
-            #Permute colours.
-            tmp = colours[randA[i]]
-            colours[randA[i]] = colours[randB[i]]
-            colours[randA[i]] = tmp
 
     return {'features' : np.asarray(iris), 'colours' : colours}
 
@@ -125,8 +118,8 @@ if __name__ == "__main__":
     
     data = getIris()
     
-    runPCA(data, newDimensionality, scree)
-    runLinearGPLVM(data, newDimensionality, beta)
+    #runPCA(data, newDimensionality, scree)
+    #runLinearGPLVM(data, newDimensionality, beta)
     runNonlinearGPLVM(data, newDimensionality)
     
     if showPlots:
