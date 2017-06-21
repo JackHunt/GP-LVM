@@ -46,8 +46,8 @@ class NonlinearGPLVM(GPLVM):
         self._X = np.copy(self.__initLatent)
 
         #Initialise steps.
-        latentStep = 1e5
-        hyperStep = 1e5
+        latentStep = 1e6
+        hyperStep = 1e6
         
         #Optimise for latent space.
         for iter in range(0, maxIterations):
@@ -72,11 +72,14 @@ class NonlinearGPLVM(GPLVM):
 
             #Update hyperparameters.
             if hyperStep > minStep:
-                hyperStep = self.__updateHyperparameters(grads, K.shape[0], learnRate)
+               hyperStep = self.__updateHyperparameters(grads, K.shape[0], learnRate)              
 
             #Progress report and early out if converged.
             if verbose:
-                print("Iteration: %s Reversed KL: %s Latent step L2: %s Hyper step L2: %s" % (iter, E, latentStep, hyperStep))
+                print("Iteration: %s Reversed KL Divergence: %s -- Latent step L2: %s -- Hyper step L2: %s" % (iter, E, latentStep, hyperStep))
+            if latentStep <= minStep and hyperStep <= minStep:
+                print("Converged!")
+                break
 
     def __initialiseLatent(self, reducedDimensionality):
         if self.__initLatent.shape[0] == 0 or self.__initLatent.shape[1] != reducedDimensionality:
@@ -104,19 +107,25 @@ class NonlinearGPLVM(GPLVM):
         #Compute kernel partial derivatives.
         dK = [self.__kernel.df(a, b, self.__params) for a in self.__initLatent for b in self.__initLatent]        
 
-        return (dLdK, dK)
+        return {'dLdK' : dLdK, 'dK' : dK}
 
     def __updateLatentVariables(self, grads, N, Q, learnRate):
         #Compute gradients w.r.t latent variables and update.
-        dLda = np.array([grad['a'] for grad in grads[1]]).reshape(N, N, Q)
+        stepSumSq = 0.0
+        dLda = np.array([grad['a'] for grad in grads['dK']]).reshape(N, N, Q)
         for i in range(0, Q):
-            dL = grads[0] * dLda[:, :, i]
-            self._X[:, i] = self._X[:, i] - 0.5 * learnRate * (2 * dL.sum(axis=1) - dL.diagonal())
-        return 1.0
+            dL = grads['dLdK'] * dLda[:, :, i]
+            step = 0.5 * (2 * dL.sum(axis=1) - dL.diagonal())
+            self._X[:, i] += - learnRate * step
+            stepSumSq += np.sum(step**2)
+        return np.sqrt(stepSumSq)
 
     def __updateHyperparameters(self, grads, N, learnRate):
         #Compute gradients w.r.t hyperparameters and update.
+        stepSumSq = 0.0
         for hyp in self.__kernel.hyperparameters:
-            dL = grads[0] * np.array([d[hyp] for d in grads[1]]).reshape(N, N)
-            self.__params[hyp] = self.__params[hyp] - learnRate * dL.trace()
-        return 1.0
+            dL = grads['dLdK'] * np.array([d[hyp] for d in grads['dK']]).reshape(N, N)
+            step = dL.trace()
+            self.__params[hyp] += - learnRate * step
+            stepSumSq += step * step
+        return np.sqrt(stepSumSq)

@@ -28,7 +28,7 @@ def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
     sortedIndices = eigVals.argsort()[::-1]
     
     #Reduce dimensionality.
-    X_reduced = np.dot(X_meanReduced, eigVecs[:, sortedIndices[0:numPrincipalComponents]])
+    X_reduced = np.dot(X, eigVecs[:, sortedIndices[0:numPrincipalComponents]])
     
     #Plot, if requested.
     if showScree:
