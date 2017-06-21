@@ -46,9 +46,9 @@ def __plotScree(eigVals, sortedIndices, numPrincipalComponents, savePlot = False
     eigSum = np.sum(eigVals)
     
     #Plot.
-    x = np.array(range(1, numPrincipalComponents + 1))
+    x = np.array(range(1, eigVals.shape[0] + 1))
     plt.figure()
-    plt.plot(x, eigVals[sortedIndices][0:numPrincipalComponents])
+    plt.plot(x, eigVals[sortedIndices])
     plt.xticks(x)
     plt.xlabel("Sorted Eigenvalue IDs")
     plt.ylabel("Normalised Eigenvalues")

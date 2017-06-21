@@ -54,6 +54,6 @@ class RadialBasisFunction(Kernel):
         dist = np.dot((a - b).transpose(), (a - b))
         dFdS = np.exp(-0.5 * params['gamma'] * dist)
         dFdG = params['theta'] * dist * np.exp(-0.5 * params['gamma'] * dist)
-        dFdA = -1.0 * params['theta'] * params['gamma'] * (a - b) * np.exp(-0.5 * params['gamma'] * dist)
+        dFdB = -1.0 * params['theta'] * params['gamma'] * (a - b) * np.exp(-0.5 * params['gamma'] * dist)
 
-        return {'a' : dFdA, 'theta' : dFdS, 'gamma' : dFdG}
+        return {'b' : dFdB, 'theta' : dFdS, 'gamma' : dFdG}

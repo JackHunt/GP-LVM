@@ -8,7 +8,7 @@ class NonlinearGPLVM(GPLVM):
     """
 
     __kernel = RadialBasisFunction()
-    __params = {'gamma' : 1.0, 'theta' : 1.0}
+    __params = {'gamma' : 1.5, 'theta' : 1.5}
     __initLatent = np.array([])
 
     def __init__(self, Y):
@@ -31,7 +31,7 @@ class NonlinearGPLVM(GPLVM):
         self.__kernel = kernel
         self.__params = params
 
-    def compute(self, reducedDimensionality, maxIterations = 150, minStep = 1e-5, learnRate = 0.001, verbose = True):
+    def compute(self, reducedDimensionality, batchSize, maxIterations = 150, minStep = 1e-6, learnRate = 0.001, verbose = True):
         """
         Method to compute latent spaces with a nonlinear GP-LVM.
         """
@@ -43,60 +43,71 @@ class NonlinearGPLVM(GPLVM):
         
         #Initialise with PCA if not already and make copy of initial latent space.
         tmpLatent = self.__initialiseLatent(reducedDimensionality)
-        self._X = np.copy(self.__initLatent)
-
-        #Initialise steps.
-        latentStep = 1e6
-        hyperStep = 1e6
         
-        #Optimise for latent space.
+        #Optimise for latent space and hyperparameters.
+        doLatent = doHyper = True
         for iter in range(0, maxIterations):
-            #Compute covariance matrix of PCA reduced data and it's inverse.
+            #Compute covariance matrix of PCA reduced data and it's pseudoinverse.
             K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
             K = K.reshape((self._X.shape[0], self._X.shape[0]))
-            K_inv = np.linalg.inv(K)
+            K += np.eye(self._X.shape[0])*5
+            K_inv = np.linalg.pinv(K)
 
             #Compute Y*Y^t if not already computed, else use cached version.
             self._computeYYt()
 
             #Compute energy.
-            #E = self.__energy(K)
-            E = 0
+            E = self.__energy(K, K_inv)
 
-            #Compute partial derivatives.
-            grads = self.__energyDeriv(K_inv)
-
-            #Update latent variables.
-            if latentStep > minStep:
-                latentStep = self.__updateLatentVariables(grads, K.shape[0], reducedDimensionality, learnRate)
-
-            #Update hyperparameters.
-            if hyperStep > minStep:
-               hyperStep = self.__updateHyperparameters(grads, K.shape[0], learnRate)              
+            #Train a mini batch with SGD.
+            stepNorms = self.__updateMiniBatch(K_inv, self._X.shape[0], reducedDimensionality, learnRate, batchSize, doLatent, doHyper)
+            doLatent = False if not doLatent or stepNorms['latentStep'] <= minStep else True
+            doHyper = False if not doHyper or stepNorms['hyperStep'] <= minStep else True
 
             #Progress report and early out if converged.
             if verbose:
-                print("Iteration: %s Reversed KL Divergence: %s -- Latent step L2: %s -- Hyper step L2: %s" % (iter, E, latentStep, hyperStep))
-            if latentStep <= minStep and hyperStep <= minStep:
+                print("Iteration: %s \nReversed KL Divergence: %s \nLatent step L2: %s \nHyperparameter step L2: %s" % (iter, E, stepNorms['latentStep'], stepNorms['hyperStep']))
+                print("--------------------------------------------------------------------------------")
+            if not doLatent and not doHyper:
                 print("Converged!")
                 break
+
+    def __updateMiniBatch(self, K_inv, N, Q, learnRate, batchSize, doLatent, doHyper):
+        #Compute partial derivatives.
+        grads = self.__energyDeriv(K_inv)
+        if doLatent:
+            dLda = np.array([grad['b'] for grad in grads['dK']]).reshape(N, N, Q)
+
+        #Generate random mini batch row id's.
+        batchIDs = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batchSize))
+
+        #Process mini batch.
+        latentSumSq = hyperSumSq = 0.0
+        for id in batchIDs:
+            #Update latent variables.
+            if doLatent:
+                latentSumSq += self.__updateLatentVariables(dLda, grads['dLdK'], learnRate, id)
+
+            #Update hyperparameters.
+            if doHyper:
+                hyperSumSq += self.__updateHyperparameters(grads['dLdK'], grads['dK'], learnRate, id)
+
+        return {'latentStep' : np.sqrt(latentSumSq), 'hyperStep' : np.sqrt(hyperSumSq)}
 
     def __initialiseLatent(self, reducedDimensionality):
         if self.__initLatent.shape[0] == 0 or self.__initLatent.shape[1] != reducedDimensionality:
             self.__initLatent = pca(self._Y, reducedDimensionality)
+        self._X = np.copy(self.__initLatent)
 
-    def __energy(self, K):
+    def __energy(self, K, K_inv):
         D = self._Y.shape[1]
         N = self._Y.shape[0]
-        S = D * self._YYt
-    
-        #Terms of reversed KL Divergence.
-        t1 = 0.5 * np.log(np.linalg.det(S))
-        t2 = -0.5 * np.log(np.linalg.det(K))
-        t3 = 0.5 * np.trace(np.dot(K, np.linalg.inv(S)))
-        t4 = -N / 2.0
 
-        return t1 + t2 + t3 + t4
+        t1 = -D * N * np.log(2.0 * np.pi)
+        t2 = -D / 2.0 * np.log(np.linalg.det(K))
+        t3 = -0.5 * np.trace(K_inv * self._YYt)
+
+        return t1 + t2 + t3
 
     def __energyDeriv(self, K_inv):
         D = self._Y.shape[1]
@@ -105,27 +116,14 @@ class NonlinearGPLVM(GPLVM):
         dLdK = np.subtract(np.dot(K_inv, np.dot(self._YYt, K_inv)), D * K_inv)
     
         #Compute kernel partial derivatives.
-        dK = [self.__kernel.df(a, b, self.__params) for a in self.__initLatent for b in self.__initLatent]        
+        dK = [self.__kernel.df(a, b, self.__params) for a in self._X for b in self._X]        
 
         return {'dLdK' : dLdK, 'dK' : dK}
 
-    def __updateLatentVariables(self, grads, N, Q, learnRate):
-        #Compute gradients w.r.t latent variables and update.
-        stepSumSq = 0.0
-        dLda = np.array([grad['a'] for grad in grads['dK']]).reshape(N, N, Q)
-        for i in range(0, Q):
-            dL = grads['dLdK'] * dLda[:, :, i]
-            step = 0.5 * (2 * dL.sum(axis=1) - dL.diagonal())
-            self._X[:, i] += - learnRate * step
-            stepSumSq += np.sum(step**2)
-        return np.sqrt(stepSumSq)
+    def __updateLatentVariables(self, dLda, dLdK, learnRate, id):
+        step = np.dot(dLdK, dLda[id, :, :])
+        self._X += - learnRate * step
+        return np.sum(step**2)
 
-    def __updateHyperparameters(self, grads, N, learnRate):
-        #Compute gradients w.r.t hyperparameters and update.
-        stepSumSq = 0.0
-        for hyp in self.__kernel.hyperparameters:
-            dL = grads['dLdK'] * np.array([d[hyp] for d in grads['dK']]).reshape(N, N)
-            step = dL.trace()
-            self.__params[hyp] += - learnRate * step
-            stepSumSq += step * step
-        return np.sqrt(stepSumSq)
+    def __updateHyperparameters(self, dLdK, dK, learnRate, id):
+        return 0.0
