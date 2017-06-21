@@ -135,9 +135,9 @@ def runNonlinearGPLVM(data, reducedDimensions):
     for a given covariance matrix generating kernel.
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
-    print("-->Running Nonlinear GPLVM.")
+    print("-->Running Nonlinear GP-LVM.")
     gplvm = gp.NonlinearGPLVM(data['features'])
-    gplvm.compute(reducedDimensions, 30, 50)#q, batch size, iterations
+    gplvm.compute(reducedDimensions, 30, 150)#q, batch size, iterations
     latent = gplvm.getLatentSpaceRepresentation()
     plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "Nonlinear GP-LVM")
     

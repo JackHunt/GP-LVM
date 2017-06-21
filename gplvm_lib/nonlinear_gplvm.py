@@ -140,7 +140,7 @@ class NonlinearGPLVM(GPLVM):
         #Compute partial derivatives.
         grads = self.__energyDeriv(K_inv)
         if doLatent:
-            dLda = np.array([grad['b'] for grad in grads['dK']]).reshape(N, N, Q)
+            dLdb = np.array([grad['b'] for grad in grads['dK']]).reshape(N, N, Q)
 
         #Generate random mini batch row id's.
         batchIDs = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batchSize))
@@ -150,11 +150,11 @@ class NonlinearGPLVM(GPLVM):
         for id in batchIDs:
             #Update latent variables.
             if doLatent:
-                latentSumSq += self.__updateLatentVariables(dLda, grads['dLdK'], learnRate, momentum, id)
+                latentSumSq += self.__updateLatentVariables(dLdb, grads['dLdK'], learnRate, momentum, id)
 
             #Update hyperparameters.
             if doHyper:
-                hyperSumSq += self.__updateHyperparameters(grads['dLdK'], grads['dK'], learnRate, id)
+                hyperSumSq += self.__updateHyperparameters(grads['dLdK'], grads['dK'], learnRate, momentum, id)
 
         return {'latentStep' : np.sqrt(latentSumSq), 'hyperStep' : np.sqrt(hyperSumSq)}
 
@@ -185,16 +185,16 @@ class NonlinearGPLVM(GPLVM):
 
         return {'dLdK' : dLdK, 'dK' : dK}
 
-    def __updateLatentVariables(self, dLda, dLdK, learnRate, momentum, id):
+    def __updateLatentVariables(self, dLdb, dLdK, learnRate, momentum, id):
         """
         Perform gradient updates over latent variables.
         """
-        step = np.dot(dLdK, dLda[id, :, :])
-        self._X += - (learnRate * step + momentum * self.__prevLatentGrad)
+        step = np.dot(dLdK, dLdb[id, :, :])
+        self._X += (learnRate * step + momentum * self.__prevLatentGrad)
         self.__prevLatentGrad = np.copy(step)
         return np.sum(step**2)
 
-    def __updateHyperparameters(self, dLdK, dK, learnRate, id):
+    def __updateHyperparameters(self, dLdK, dK, learnRate, momentum, id):
         """
         Perform gradient updates over hyperparameters.
         """
