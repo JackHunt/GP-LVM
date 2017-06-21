@@ -30,6 +30,9 @@ class GPLVM(ABC):
         self._Y = Y
 
     def _computeYYt(self):
+        """
+        Computes YY^t if not already computed. Skips if already cached.
+        """
         if self._YYt.shape[0] == 0:
             self._YYt = np.dot(self._Y, self._Y.transpose())
 

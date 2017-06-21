@@ -105,7 +105,7 @@ def runNonlinearGPLVM(data, reducedDimensions):
     """
     print("-->Running Nonlinear GPLVM.")
     gplvm = gp.NonlinearGPLVM(data['features'])
-    gplvm.compute(reducedDimensions, 30, 250)#q, batch size, iterations
+    gplvm.compute(reducedDimensions, 30, 50)#q, batch size, iterations
     latent = gplvm.getLatentSpaceRepresentation()
     plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "Nonlinear GP-LVM")
     
