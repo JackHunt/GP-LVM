@@ -88,7 +88,8 @@ class NonlinearGPLVM(GPLVM):
             K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
             K = K.reshape((self._X.shape[0], self._X.shape[0]))
             K += np.eye(self._X.shape[0])*jitter
-            K_inv = np.linalg.pinv(K)
+            #K_inv = np.linalg.pinv(K)
+            K_inv = np.linalg.solve(K, np.eye(K.shape[0]))
 
             #Compute Y*Y^t if not already computed, else use cached version.
             self._computeYYt()
