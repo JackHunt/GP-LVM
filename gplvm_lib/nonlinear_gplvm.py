@@ -200,7 +200,7 @@ class NonlinearGPLVM(GPLVM):
         Perform gradient updates over latent variables.
         """
         step = np.dot(dLdK, dLdb[id, :, :])
-        self._X += (learnRate * step + momentum * self.__prevLatentGrad)
+        self._X -= (learnRate * step + momentum * self.__prevLatentGrad)
         self.__prevLatentGrad = np.copy(step)
         return np.sum(step**2)
 
@@ -215,8 +215,9 @@ class NonlinearGPLVM(GPLVM):
 
             dKdV = np.array([g[var] for g in dK]).reshape(dLdK.shape[0], dLdK.shape[0])
             tmp = np.dot(dLdK, dKdV)
-            step = 0.5 * (2.0 * tmp.sum(axis=1) - tmp.diagonal())
-            self.__params[var] += (learnRate * step[id] + momentum * self.__prevHypGrad[var])
-            self.__prevHypGrad[var] = step[id]
-            stepSum += step[id]**2
+            #step = 0.5 * (2.0 * tmp.sum(axis=1) - tmp.diagonal())
+            step = tmp[id][id]
+            self.__params[var] -= (learnRate * step + momentum * self.__prevHypGrad[var])
+            self.__prevHypGrad[var] = step
+            stepSum += step**2
         return stepSum
