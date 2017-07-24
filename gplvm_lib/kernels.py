@@ -80,12 +80,19 @@ class RadialBasisFunction(Kernel):
     Radial Basis Function kernel.
     """
 
+    __deltaDist = 1e-5
+
     def __init__(self):
         """
         Constructs a new Radial Basis Function.
         Calls super class constructor for sanity checking.
         """
-        super().__init__(['gamma', 'theta'])
+        super().__init__(['theta1', 'theta2', 'theta3', 'theta4'])
+
+    def __delta(self, dist):
+        if dist < self.__deltaDist:
+            return 1.0
+        return 0.0
 
     def f(self, a, b, params):
         """
@@ -94,7 +101,10 @@ class RadialBasisFunction(Kernel):
         """
         super().f(a, b, params)
         diff = a - b
-        return params['theta'] * np.exp((-params['gamma'] / 2.0) * np.dot(diff.transpose(), diff))
+        dist = np.dot(diff.transpose(), diff)
+        t1 = params['theta1'] * np.exp((-params['theta2'] / 2.0) * dist)
+        t2 = params['theta3'] + params['theta4'] * self.__delta(dist)
+        return t1 + t2
 
     def df(self, a, b, params):
         """
@@ -102,9 +112,12 @@ class RadialBasisFunction(Kernel):
         Again, calls super class for sanity checking.
         """
         super().df(a, b, params)
-        dist = np.dot((a - b).transpose(), (a - b))
-        dFdS = np.exp(-0.5 * params['gamma'] * dist)
-        dFdG = params['theta'] * dist * np.exp(-0.5 * params['gamma'] * dist)
-        dFdB = -1.0 * params['theta'] * params['gamma'] * (a - b) * np.exp(-0.5 * params['gamma'] * dist)
+        diff = a - b
+        dist = np.dot(diff.transpose(), diff)
+        dFdS1 = np.exp(-0.5 * params['theta2'] * dist)
+        dFdS2 = params['theta1'] * dist * np.exp(-0.5 * params['theta2'] * dist)
+        dFdS3 = 1.0
+        dFdS4 = self.__delta(dist)
+        dFdB = -1.0 * params['theta1'] * params['theta2'] * (a - b) * np.exp(-0.5 * params['theta2'] * dist)
 
-        return {'b' : dFdB, 'theta' : dFdS, 'gamma' : dFdG}
+        return {'b' : dFdB, 'theta1' : dFdS1, 'theta2' : dFdS2, 'theta3' : dFdS3, 'theta4' : dFdS4}

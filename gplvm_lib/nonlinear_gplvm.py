@@ -40,11 +40,12 @@ class NonlinearGPLVM(GPLVM):
     """
 
     __kernel_initial = RadialBasisFunction()
-    __params_initial = {'gamma' : 4.0, 'theta' : 4.0}
+    __params_initial = {'theta1' : 2.0, 'theta2' : 2.0, 'theta3' : 2.0, 'theta4' : 2.0}
     __kernel = __kernel_initial
     __params = __params_initial
     __initLatent = np.array([])
     __prevLatentGrad = np.array([])
+    __prevHypGrad = {}
 
     def __init__(self, Y):
         """
@@ -66,7 +67,8 @@ class NonlinearGPLVM(GPLVM):
         self.__kernel = kernel
         self.__params = params
 
-    def compute(self, reducedDimensionality, batchSize, jitter = 1, maxIterations = 150, minStep = 1e-6, learnRate = 0.001, momentum = 0.001, verbose = True):
+    def compute(self, reducedDimensionality, batchSize, jitter = 1, maxIterations = 150, minStep = 1e-6, 
+        learnRate = 0.001, momentum = 0.001, verbose = True, doLatent = True, doHyper = True):
         """
         Method to compute latent spaces with a nonlinear GP-LVM.
         Training is performed using Stochatic Gradient Descent.
@@ -81,8 +83,11 @@ class NonlinearGPLVM(GPLVM):
         tmpLatent = self.__initialiseLatent(reducedDimensionality)
         self.__resetMomentum()
         
+        #For storing initial energy.
+        initialEnergy = 0.0
+        E = 0.0
+
         #Optimise for latent space and hyperparameters.
-        doLatent = doHyper = True
         for iter in range(0, maxIterations):
             #Compute covariance matrix of PCA reduced data and it's pseudoinverse.
             K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
@@ -96,6 +101,8 @@ class NonlinearGPLVM(GPLVM):
 
             #Compute energy.
             E = self.__energy(K, K_inv)
+            if iter == 0:
+                initialEnergy = E
 
             #Train a mini batch with SGD.
             stepNorms = self.__updateMiniBatch(K_inv, self._X.shape[0], reducedDimensionality, learnRate, momentum, batchSize, doLatent, doHyper)
@@ -109,6 +116,8 @@ class NonlinearGPLVM(GPLVM):
             if not doLatent and not doHyper:
                 print("Converged!")
                 break
+        print("Initial Log Likelihood: %s \nPost-Optimisation Log Likelihood: %s" % (initialEnergy, E))
+        print("Final Hyperparameters:\n %s" % self.__params)
 
     def reset(self):
         """
@@ -133,6 +142,7 @@ class NonlinearGPLVM(GPLVM):
         Resets the momentum term(previous gradients) for SGD to zero.
         """
         self.__prevLatentGrad = np.zeros_like(self._X)
+        self.__prevHypGrad.clear()
 
     def __updateMiniBatch(self, K_inv, N, Q, learnRate, momentum, batchSize, doLatent, doHyper):
         """
@@ -140,8 +150,6 @@ class NonlinearGPLVM(GPLVM):
         """
         #Compute partial derivatives.
         grads = self.__energyDeriv(K_inv)
-        if doLatent:
-            dLdb = np.array([grad['b'] for grad in grads['dK']]).reshape(N, N, Q)
 
         #Generate random mini batch row id's.
         batchIDs = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batchSize))
@@ -151,6 +159,7 @@ class NonlinearGPLVM(GPLVM):
         for id in batchIDs:
             #Update latent variables.
             if doLatent:
+                dLdb = np.array([grad['b'] for grad in grads['dK']]).reshape(N, N, Q)
                 latentSumSq += self.__updateLatentVariables(dLdb, grads['dLdK'], learnRate, momentum, id)
 
             #Update hyperparameters.
@@ -199,4 +208,15 @@ class NonlinearGPLVM(GPLVM):
         """
         Perform gradient updates over hyperparameters.
         """
-        return 0.0
+        stepSum = 0.0
+        for var in self.__kernel.hyperparameters:
+            if var not in self.__prevHypGrad.keys():
+                self.__prevHypGrad[var] = 0.0
+
+            dKdV = np.array([g[var] for g in dK]).reshape(dLdK.shape[0], dLdK.shape[0])
+            tmp = np.dot(dLdK, dKdV)
+            step = 0.5 * (2.0 * tmp.sum(axis=1) - tmp.diagonal())
+            self.__params[var] += (learnRate * step[id] + momentum * self.__prevHypGrad[var])
+            self.__prevHypGrad[var] = step[id]
+            stepSum += step[id]**2
+        return stepSum
