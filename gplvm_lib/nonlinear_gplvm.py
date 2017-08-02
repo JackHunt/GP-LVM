@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from gplvm import *
 from pca import pca
+from sys import float_info
 
 class NonlinearGPLVM(GPLVM):
     """
@@ -93,8 +94,8 @@ class NonlinearGPLVM(GPLVM):
             K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
             K = K.reshape((self._X.shape[0], self._X.shape[0]))
             K += np.eye(self._X.shape[0])*jitter
-            #K_inv = np.linalg.pinv(K)
-            K_inv = np.linalg.solve(K, np.eye(K.shape[0]))
+            K_inv = np.linalg.pinv(K)
+            #K_inv = np.linalg.solve(K, np.eye(K.shape[0]))
 
             #Compute Y*Y^t if not already computed, else use cached version.
             self._computeYYt()
@@ -152,7 +153,7 @@ class NonlinearGPLVM(GPLVM):
         grads = self.__energyDeriv(K_inv)
 
         #Generate random mini batch row id's.
-        batchIDs = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batchSize))
+        batchIDs = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batchSize)) if batchSize != self._X.shape[0] else range(self._X.shape[0])
 
         #Process mini batch.
         latentSumSq = hyperSumSq = 0.0
@@ -172,11 +173,12 @@ class NonlinearGPLVM(GPLVM):
         """
         Computes the Log Likelihood function. Eq 6 in paper.
         """
+
         D = self._Y.shape[1]
         N = self._Y.shape[0]
 
         t1 = -D * N * np.log(2.0 * np.pi)
-        t2 = -D / 2.0 * np.log(np.linalg.det(K))
+        t2 = -D / 2.0 * np.linalg.slogdet(K)[1]
         t3 = -0.5 * np.trace(K_inv * self._YYt)
 
         return t1 + t2 + t3
@@ -199,9 +201,9 @@ class NonlinearGPLVM(GPLVM):
         """
         Perform gradient updates over latent variables.
         """
-        step = np.dot(dLdK, dLdb[id, :, :])
-        self._X -= (learnRate * step + momentum * self.__prevLatentGrad)
-        self.__prevLatentGrad = np.copy(step)
+        step = np.dot(dLdK[id, :], dLdb[id, :, :])
+        self._X[id, :] -= (learnRate * step + momentum * self.__prevLatentGrad[id, :])
+        self.__prevLatentGrad[id, :] = np.copy(step)
         return np.sum(step**2)
 
     def __updateHyperparameters(self, dLdK, dK, learnRate, momentum, id):
