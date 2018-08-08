@@ -44,9 +44,9 @@ class NonlinearGPLVM(GPLVM):
     __params_initial = {'theta1' : 2.0, 'theta2' : 2.0, 'theta3' : 2.0, 'theta4' : 2.0}
     __kernel = __kernel_initial
     __params = __params_initial
-    __initLatent = np.array([])
-    __prevLatentGrad = np.array([])
-    __prevHypGrad = {}
+    __init_latent = np.array([])
+    __prev_latent_grad = np.array([])
+    __prev_hyp_grad = {}
 
     def __init__(self, Y):
         """
@@ -55,7 +55,7 @@ class NonlinearGPLVM(GPLVM):
         """
         super().__init__(Y)
 
-    def setKernelAndInitialParams(self, kernel, params):
+    def set_kernel_and_initial_params(self, kernel, params):
         """
         Sanity checks and updates the kernel and initial hyperparameters for this GP-LVM.
         """
@@ -68,32 +68,32 @@ class NonlinearGPLVM(GPLVM):
         self.__kernel = kernel
         self.__params = params
 
-    def compute(self, reducedDimensionality, batchSize, jitter = 1, maxIterations = 150, minStep = 1e-6, 
-        learnRate = 0.001, momentum = 0.001, verbose = True, doLatent = True, doHyper = True):
+    def compute(self, reduced_dimensionality, batch_size, jitter = 1, max_iterations = 150, min_step = 1e-6, 
+        learn_rate = 0.001, momentum = 0.001, verbose = True, do_latent = True, do_hyper = True):
         """
         Method to compute latent spaces with a nonlinear GP-LVM.
         Training is performed using Stochatic Gradient Descent.
         """
         #Do sanity checking in base class.
-        super().compute(reducedDimensionality)
+        super().compute(reduced_dimensionality)
 
         #Compute Y*Yt if not already cached and cache it.
         self._computeYYt()
         
         #Initialise with PCA if not already and make copy of initial latent space, also reset momentum.
-        tmpLatent = self.__initialiseLatent(reducedDimensionality)
-        self.__resetMomentum()
+        tmp_latent = self.__initialise_latent(reduced_dimensionality)
+        self.__reset_momentum()
         
         #For storing initial energy.
-        initialEnergy = 0.0
+        initial_energy = 0.0
         E = 0.0
 
         #Optimise for latent space and hyperparameters.
-        for iter in range(0, maxIterations):
+        for iter in range(0, max_iterations):
             #Compute covariance matrix of PCA reduced data and it's pseudoinverse.
             K = np.array([self.__kernel.f(a, b, self.__params) for a in self._X for b in self._X])
             K = K.reshape((self._X.shape[0], self._X.shape[0]))
-            K += np.eye(self._X.shape[0])*jitter
+            K += np.eye(self._X.shape[0]) * jitter
             K_inv = np.linalg.pinv(K)
             #K_inv = np.linalg.solve(K, np.eye(K.shape[0]))
 
@@ -103,21 +103,21 @@ class NonlinearGPLVM(GPLVM):
             #Compute energy.
             E = self.__energy(K, K_inv)
             if iter == 0:
-                initialEnergy = E
+                initial_energy = E
 
             #Train a mini batch with SGD.
-            stepNorms = self.__updateMiniBatch(K_inv, self._X.shape[0], reducedDimensionality, learnRate, momentum, batchSize, doLatent, doHyper)
-            doLatent = False if not doLatent or stepNorms['latentStep'] <= minStep else True
-            doHyper = False if not doHyper or stepNorms['hyperStep'] <= minStep else True
+            step_norms = self.__update_mini_batch(K_inv, self._X.shape[0], reduced_dimensionality, learn_rate, momentum, batch_size, do_latent, do_hyper)
+            do_latent = False if not do_latent or step_norms['latentStep'] <= min_step else True
+            do_hyper = False if not do_hyper or step_norms['hyperStep'] <= min_step else True
 
             #Progress report and early out if converged.
             if verbose:
-                print("Iteration: %s \nLog Likelihood: %s \nLatent step L2: %s \nHyperparameter step L2: %s" % (iter, E, stepNorms['latentStep'], stepNorms['hyperStep']))
+                print("Iteration: %s \nLog Likelihood: %s \nLatent step L2: %s \nHyperparameter step L2: %s" % (iter, E, step_norms['latentStep'], step_norms['hyperStep']))
                 print("--------------------------------------------------------------------------------")
-            if not doLatent and not doHyper:
+            if not do_latent and not do_hyper:
                 print("Converged!")
                 break
-        print("Initial Log Likelihood: %s \nPost-Optimisation Log Likelihood: %s" % (initialEnergy, E))
+        print("Initial Log Likelihood: %s \nPost-Optimisation Log Likelihood: %s" % (initial_energy, E))
         print("Final Hyperparameters:\n %s" % self.__params)
 
     def reset(self):
@@ -127,47 +127,47 @@ class NonlinearGPLVM(GPLVM):
         """
         self.__kernel = self.__kernel_initial
         self.__params = self.__params_initial
-        self.__X = np.copy(self.__initLatent)
+        self.__X = np.copy(self.__init_latent)
         self.__resetMomentum()
 
-    def __initialiseLatent(self, reducedDimensionality):
+    def __initialise_latent(self, reduced_dimensionality):
         """
         Initialises latent variables with Principal Component Analysis and keeps a copy for resetting purposes.
         """
-        if self.__initLatent.shape[0] == 0 or self.__initLatent.shape[1] != reducedDimensionality:
-            self.__initLatent = pca(self._Y, reducedDimensionality)
-        self._X = np.copy(self.__initLatent)
+        if self.__init_latent.shape[0] == 0 or self.__init_latent.shape[1] != reduced_dimensionality:
+            self.__init_latent = pca(self._Y, reduced_dimensionality)
+        self._X = np.copy(self.__init_latent)
 
-    def __resetMomentum(self):
+    def __reset_momentum(self):
         """
         Resets the momentum term(previous gradients) for SGD to zero.
         """
-        self.__prevLatentGrad = np.zeros_like(self._X)
-        self.__prevHypGrad.clear()
+        self.__prev_latent_grad = np.zeros_like(self._X)
+        self.__prev_hyp_grad.clear()
 
-    def __updateMiniBatch(self, K_inv, N, Q, learnRate, momentum, batchSize, doLatent, doHyper):
+    def __update_mini_batch(self, K_inv, N, Q, learn_rate, momentum, batch_size, do_latent, do_hyper):
         """
         Performs SGD(Stochastic Gradient Descent) on a randomised minibatch subset of the latent variables.
         """
         #Compute partial derivatives.
-        grads = self.__energyDeriv(K_inv)
+        grads = self.__energy_deriv(K_inv)
 
         #Generate random mini batch row id's.
-        batchIDs = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batchSize)) if batchSize != self._X.shape[0] else range(self._X.shape[0])
+        batch_ids = np.random.randint(self._X.shape[0], size = min(self._X.shape[0], batch_size)) if batch_size != self._X.shape[0] else range(self._X.shape[0])
 
         #Process mini batch.
-        latentSumSq = hyperSumSq = 0.0
-        for id in batchIDs:
+        latent_sum_sq = hyper_sum_sq = 0.0
+        for id in batch_ids:
             #Update latent variables.
-            if doLatent:
+            if do_latent:
                 dLdb = np.array([grad['b'] for grad in grads['dK']]).reshape(N, N, Q)
-                latentSumSq += self.__updateLatentVariables(dLdb, grads['dLdK'], learnRate, momentum, id)
+                latent_sum_sq += self.__update_latent_variables(dLdb, grads['dLdK'], learn_rate, momentum, id)
 
             #Update hyperparameters.
-            if doHyper:
-                hyperSumSq += self.__updateHyperparameters(grads['dLdK'], grads['dK'], learnRate, momentum, id)
+            if do_hyper:
+                hyper_sum_sq += self.__update_hyperparameters(grads['dLdK'], grads['dK'], learn_rate, momentum, id)
 
-        return {'latentStep' : np.sqrt(latentSumSq), 'hyperStep' : np.sqrt(hyperSumSq)}
+        return {'latentStep' : np.sqrt(latent_sum_sq), 'hyperStep' : np.sqrt(hyper_sum_sq)}
 
     def __energy(self, K, K_inv):
         """
@@ -181,9 +181,9 @@ class NonlinearGPLVM(GPLVM):
         t2 = -D / 2.0 * np.linalg.slogdet(K)[1]
         t3 = -0.5 * np.trace(K_inv * self._YYt)
 
-        return t1 + t2 + t3
+        return (t1 + t2 + t3)
 
-    def __energyDeriv(self, K_inv):
+    def __energy_deriv(self, K_inv):
         """
         Computes the partial derivatives dL/dK and dK/dp for p, some hyperparameter.
         """
@@ -197,29 +197,29 @@ class NonlinearGPLVM(GPLVM):
 
         return {'dLdK' : dLdK, 'dK' : dK}
 
-    def __updateLatentVariables(self, dLdb, dLdK, learnRate, momentum, id):
+    def __update_latent_variables(self, dLdb, dLdK, learn_rate, momentum, id):
         """
         Perform gradient updates over latent variables.
         """
         step = np.dot(dLdK[id, :], dLdb[id, :, :])
-        self._X[id, :] -= (learnRate * step + momentum * self.__prevLatentGrad[id, :])
-        self.__prevLatentGrad[id, :] = np.copy(step)
+        self._X[id, :] -= (learn_rate * step + momentum * self.__prev_latent_grad[id, :])
+        self.__prev_latent_grad[id, :] = np.copy(step)
         return np.sum(step**2)
 
-    def __updateHyperparameters(self, dLdK, dK, learnRate, momentum, id):
+    def __update_hyperparameters(self, dLdK, dK, learn_rate, momentum, id):
         """
         Perform gradient updates over hyperparameters.
         """
-        stepSum = 0.0
+        step_sum = 0.0
         for var in self.__kernel.hyperparameters:
-            if var not in self.__prevHypGrad.keys():
-                self.__prevHypGrad[var] = 0.0
+            if var not in self.__prev_hyp_grad.keys():
+                self.__prev_hyp_grad[var] = 0.0
 
             dKdV = np.array([g[var] for g in dK]).reshape(dLdK.shape[0], dLdK.shape[0])
             tmp = np.dot(dLdK, dKdV)
             #step = 0.5 * (2.0 * tmp.sum(axis=1) - tmp.diagonal())
             step = tmp[id][id]
-            self.__params[var] -= (learnRate * step + momentum * self.__prevHypGrad[var])
-            self.__prevHypGrad[var] = step
-            stepSum += step**2
-        return stepSum
+            self.__params[var] -= (learn_rate * step + momentum * self.__prev_hyp_grad[var])
+            self.__prev_hyp_grad[var] = step
+            step_sum += step**2
+        return step_sum

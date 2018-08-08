@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import matplotlib.pyplot as plt
 
-def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
+def pca(X, num_principal_components, show_scree = False, save_scree = False):
     """ 
     Performs Principal Component Analysis for data dimensionality reduction.
     Assumes that rows pertain to data points and columns to variables.
@@ -42,51 +42,50 @@ def pca(X, numPrincipalComponents, showScree = False, saveScree = False):
     if X.shape[0] == 0:
         raise ValueError("Cannot perform PCA on an empty matrix.")
         
-    if X.shape[1] < numPrincipalComponents:
-        raise ValueError("Cannot reduce %s dimensional data to %d dimensions." % (X.shape[1], numPrincipalComponents))
+    if X.shape[1] < num_principal_components:
+        raise ValueError("Cannot reduce %s dimensional data to %d dimensions." % (X.shape[1], num_principal_components))
         
-    if X.shape[1] == numPrincipalComponents:
+    if X.shape[1] == num_principal_components:
         return X
     
     #Subtract the mean from each column.
     means = np.array([np.mean(X, axis = 0),]*X.shape[0])
-    X_meanReduced = np.subtract(X, means)
+    X_mean_reduced = np.subtract(X, means)
     
     #Get the covariance matrix of the mean subtracted data.
-    cov = np.cov(X_meanReduced, rowvar = False)
+    cov = np.cov(X_mean_reduced, rowvar = False)
     
     #Get the eigendecomposition of the covariance matrix and sort.
-    eigVals, eigVecs = np.linalg.eig(cov)
-    sortedIndices = eigVals.argsort()[::-1]
+    eig_vals, eig_vecs = np.linalg.eig(cov)
+    sorted_indices = eig_vals.argsort()[::-1]
     
     #Reduce dimensionality.
-    X_reduced = np.dot(X, eigVecs[:, sortedIndices[0:numPrincipalComponents]])
+    X_reduced = np.dot(X, eig_vecs[:, sorted_indices[0:num_principal_components]])
     
     #Plot, if requested.
-    if showScree:
-        __plotScree(eigVals, sortedIndices[::-1], numPrincipalComponents, saveScree)
+    if show_scree:
+        __plot_scree(eig_vals, sorted_indices[::-1], num_principal_components, save_scree)
     
     return X_reduced
     
-def __plotScree(eigVals, sortedIndices, numPrincipalComponents, savePlot = False):
+def __plot_scree(eig_vals, sorted_indices, num_principal_components, save_plot = False):
     """
     Displays a scree plot(sorted and normalised Eigenvalues).
     Optionally, one can save the plot to a file named 'scree.png'
     """
     #Sort and sum eigenvalues.
-    eigVals = np.sort(eigVals)
-    eigSum = np.sum(eigVals)
+    eig_vals = np.sort(eig_vals)
+    eig_sum = np.sum(eig_vals)
     
     #Plot.
-    x = np.array(range(1, eigVals.shape[0] + 1))
+    x = np.array(range(1, eig_vals.shape[0] + 1))
     plt.figure()
-    plt.plot(x, eigVals[sortedIndices])
+    plt.plot(x, eig_vals[sorted_indices])
     plt.xticks(x)
     plt.xlabel("Sorted Eigenvalue IDs")
     plt.ylabel("Normalised Eigenvalues")
     plt.title("PCA Scree Plot")
     plt.grid(True)
-    if savePlot:
+    if save_plot:
         plt.savefig("scree.png")
     #plt.show()
-    

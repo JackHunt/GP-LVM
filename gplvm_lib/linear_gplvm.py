@@ -37,9 +37,9 @@ class LinearGPLVM(GPLVM):
     Class representing a linear Gaussian Process Latent Variable Model.
     """
 
-    _eigValsYYt = np.array([])
-    _eigVecsYYt = np.array([])
-    _sortedIndicesYYt = []
+    _eig_valsYYt = np.array([])
+    _eig_vecsYYt = np.array([])
+    _sorted_indicesYYt = []
     
     def __init__(self, Y):
         """
@@ -48,17 +48,17 @@ class LinearGPLVM(GPLVM):
         """
         super().__init__(Y)
 
-    def _computeEigendecompositionYYt(self):
-        if self._eigValsYYt.shape[0] == 0 and self._eigVecsYYt.shape[0] == 0:
-            self._eigValsYYt, self._eigVecsYYt = np.linalg.eig(self._YYt)
-            self._sortedIndicesYYt = self._eigValsYYt.argsort()[::-1]
+    def _compute_eigendecompositionYYt(self):
+        if self._eig_valsYYt.shape[0] == 0 and self._eig_vecsYYt.shape[0] == 0:
+            self._eig_valsYYt, self._eig_vecsYYt = np.linalg.eig(self._YYt)
+            self._sorted_indicesYYt = self._eig_valsYYt.argsort()[::-1]
         
-    def compute(self, reducedDimensionality, beta):
+    def compute(self, reduced_dimensionality, beta):
         """
         Method to compute latent spaces with a linear GP-LVM.
         """
         #Do sanity checking in base class.
-        super().compute(reducedDimensionality)
+        super().compute(reduced_dimensionality)
         
         #Data dimensionality.
         D = self._Y.shape[1]
@@ -67,23 +67,20 @@ class LinearGPLVM(GPLVM):
         self._computeYYt()
         
         #Compute eigendecomposition of Y*Y^t and sort.
-        self._computeEigendecompositionYYt()
+        self._compute_eigendecompositionYYt()
         
         #Compute eigendecomposition of Y*Y^t and sort.
-        eigValsDYYt, eigVecsDYYt = np.linalg.eig((1.0 / D) * self._YYt)
-        sortedIndicesDYYt = eigValsDYYt.argsort()[::-1]
+        eig_valsDYYt, eig_vecsDYYt = np.linalg.eig((1.0 / D) * self._YYt)
+        sorted_indicesDYYt = eig_valsDYYt.argsort()[::-1]
         
         #Construct L matrix.
-        lVec = eigValsDYYt[sortedIndicesDYYt[0:reducedDimensionality]]
+        lVec = eig_valsDYYt[sorted_indicesDYYt[0:reduced_dimensionality]]
         lVec -= 1.0 / beta
         lVec = 1.0 / np.sqrt(lVec)
         L = np.diag(lVec)
         
         #Arbitrary rotation matrix.
-        V = np.eye(reducedDimensionality)*5
+        V = np.eye(reduced_dimensionality) * 5
         
         #Finally, compute latent space representation - X = U*L*V^t.
-        self._X = np.dot(self._eigVecsYYt[:, self._sortedIndicesYYt[0:reducedDimensionality]], np.dot(L, V.transpose()))
-        
-        
-        
+        self._X = np.dot(self._eig_vecsYYt[:, self._sorted_indicesYYt[0:reduced_dimensionality]], np.dot(L, V.transpose()))

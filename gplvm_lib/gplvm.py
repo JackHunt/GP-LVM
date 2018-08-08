@@ -71,16 +71,16 @@ class GPLVM(ABC):
         if self._YYt.shape[0] != self._Y.shape[0] or self._YYt.shape[0] != self._Y.shape[0]:
             raise ValueError("Mismatch between data matrix Y and YY^t. Have you changed data matrix externally?")
         
-    def getLatentSpaceRepresentation(self):
+    def get_latent_space_representation(self):
         """
         Returns the most recently computed latent space representation of the data.
         """
         return self._X
     
     @abstractmethod
-    def compute(self, reducedDimensionality):
+    def compute(self, reduced_dimensionality):
         """
         Abstract method to compute latent spaces with a GP-LVM.
         """
-        if reducedDimensionality >= self._Y.shape[1]:
+        if reduced_dimensionality >= self._Y.shape[1]:
             raise ValueError("Cannot reduce %s dimensional data to %d dimensions." % (self._Y.shape[1], reducedDimensionality))

@@ -34,7 +34,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-def plot1D(data, title, method, savePlot = False):
+def plot_1D(data, title, method, save_plot = False):
     """
     Plots data in one dimension.
     """
@@ -51,11 +51,11 @@ def plot1D(data, title, method, savePlot = False):
     plt.title("1D Latent Space Representation of %s using %s" % (title, method))
     #plt.grid(True)
     
-    if savePlot:
+    if save_plot:
         plt.savefig("1D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))
     #plt.show()
     
-def plot2D(data, title, method, colours = [], savePlot = False):
+def plot_2D(data, title, method, colours = [], save_plot = False):
     """
     Plots the data in two dimensions as a 2D scatter graph.
     Optionally, a list of per point colours can be provided.
@@ -77,11 +77,11 @@ def plot2D(data, title, method, colours = [], savePlot = False):
     plt.title("2D Latent Space Representation of %s using %s" % (title, method))
     #plt.grid(True)
     
-    if savePlot:
+    if save_plot:
         plt.savefig("2D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))
     #plt.show()
     
-def plot3D(data, title, method, colours = [], savePlot = False):
+def plot3D(data, title, method, colours = [], save_plot = False):
     """
     Plots the data in three dimensions as a 3D scatter graph.
     Optionally, a list of per point colours can be provided.
@@ -105,5 +105,5 @@ def plot3D(data, title, method, colours = [], savePlot = False):
     ax.set_zlabel('Z Dimension')
     ax.set_title("3D Latent Space Representation of %s using %s" % (title, method))
     
-    if savePlot:
+    if save_plot:
         plt.savefig("3D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))

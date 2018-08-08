@@ -41,15 +41,15 @@ class Kernel(ABC):
     #In derived classes this will be a list of hyperparameters.
     hyperparameters = []
 
-    def __init__(self, hyperParams):
+    def __init__(self, hyper_params):
         """
         Base Kernel constructor. Provides limited sanity checking.
         """
-        if len(hyperParams) == 0:
+        if len(hyper_params) == 0:
             raise ValueError("Must specify hyperparameters for child kernel class.")
-        self.hyperparameters = hyperParams
+        self.hyperparameters = hyper_params
 
-    def __checkValid(self, a, b, params):
+    def __check_valid(self, a, b, params):
         """
         Checks that two vectors provided to a kernel are a valid combination.
         Sanity checks shapes.
@@ -66,21 +66,21 @@ class Kernel(ABC):
         """
         Abstract method to evaluate a covariance matrix entry for two given vectors and hyperparameter set.
         """
-        self.__checkValid(a, b, params)
+        self.__check_valid(a, b, params)
 
     @abstractmethod
     def df(self, a, b, params):
         """
         Abstract method to evaluate a covariance matrix derivative entry for two given vectors and hyperparameter set.
         """
-        self.__checkValid(a, b, params)
+        self.__check_valid(a, b, params)
 
 class RadialBasisFunction(Kernel):
     """
     Radial Basis Function kernel.
     """
 
-    __deltaDist = 1e-5
+    __delta_dist = 1e-5
 
     def __init__(self):
         """
@@ -90,7 +90,7 @@ class RadialBasisFunction(Kernel):
         super().__init__(['theta1', 'theta2', 'theta3', 'theta4'])
 
     def __delta(self, dist):
-        if dist < self.__deltaDist:
+        if dist < self.__delta_dist:
             return 1.0
         return 0.0
 

@@ -39,14 +39,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import gplvm_lib as gp
 
-irisURL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
-irisFname = 'iris.data'
+iris_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
+iris_fname = 'iris.data'
 
 #Control plotting here.
-showPlots = True
-savePlots = False
+show_plots = True
+save_plots = False
 
-def getIris(useColouring = True):
+def get_iris(use_colouring = True):
     """
     Loads the four dimensional Fisher Iris dataset.
     If the 'iris.data' file is not present in the working directory, 
@@ -55,21 +55,21 @@ def getIris(useColouring = True):
     """
     iris = []
     colours = []
-    if not os.path.isfile(irisFname):
+    if not os.path.isfile(iris_fname):
         print("Attempting to download the iris dataset.")
         try:
-            urllib.request.urlretrieve(irisURL, irisFname)
+            urllib.request.urlretrieve(iris_url, iris_fname)
         except urllib.request.URLError:
             sys.exit("Unable to download iris dataset. Quitting.")
     
-    with open(irisFname, newline='') as file:
+    with open(iris_fname, newline='') as file:
         reader = csv.reader(file, delimiter = ',')
         for line in reader:
             if len(line) != 0:
                 #Extract feature vector.
                 iris.append(list(map(float, line[0:4])))
                 #Extract class label and assign colour, if necessary.
-                if useColouring:
+                if use_colouring:
                     if line[4] == "Iris-setosa":
                         colours.append("red")
                     elif line[4] == "Iris-versicolor":
@@ -101,35 +101,35 @@ def plot(data, colours, dimensionality, title, method):
     Helper function to reduce code duplication.
     """
     if dimensionality == 1:
-        gp.plot1D(data, title, method, savePlots)
+        gp.plot_1D(data, title, method, save_plots)
     elif dimensionality == 2:
-        gp.plot2D(data, title, method, colours, savePlots)
+        gp.plot_2D(data, title, method, colours, save_plots)
     elif dimensionality == 3:
-        gp.plot3D(data, title, method, colours, savePlots)
+        gp.plot_3D(data, title, method, colours, save_plots)
     else:
         return None
     
-def runPCA(data, reducedDimensions, showScree):
+def run_pca(data, reduced_dimensions, show_scree):
     """
     Runs standard PCA on the given dataset, optionally showing the associated
     Scree plot(normalised Eigenvalues)
     """
     print("-->Running PCA.")
-    latent = gp.pca(data['features'], reducedDimensions, showScree, savePlots)
-    plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "PCA")
+    latent = gp.pca(data['features'], reduced_dimensions, show_scree, save_plots)
+    plot(latent, data['colours'], reduced_dimensions, "Iris Dataset", "PCA")
     
-def runLinearGPLVM(data, reducedDimensions, beta):
+def run_linear_gplvm(data, reduced_dimensions, beta):
     """
     Runs the Linear Gaussian Process Latent Variable Model on the given dataset. 
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
     print("-->Running Linear GP-LVM.")
     gplvm = gp.LinearGPLVM(data['features'])
-    gplvm.compute(reducedDimensions, beta)
-    latent = gplvm.getLatentSpaceRepresentation()
-    plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "Linear GP-LVM")
+    gplvm.compute(reduced_dimensions, beta)
+    latent = gplvm.get_latent_space_representation()
+    plot(latent, data['colours'], reduced_dimensions, "Iris Dataset", "Linear GP-LVM")
     
-def runNonlinearGPLVM(data, reducedDimensions):
+def run_nonlinear_gplvm(data, reduced_dimensions):
     """
     Runs the Nonlinear Gaussian Process Latent Variable Model on the given dataset, 
     for a given covariance matrix generating kernel.
@@ -137,9 +137,9 @@ def runNonlinearGPLVM(data, reducedDimensions):
     """
     print("-->Running Nonlinear GP-LVM.")
     gplvm = gp.NonlinearGPLVM(data['features'])
-    gplvm.compute(reducedDimensions, 50, maxIterations = 50, jitter = 4, learnRate = 0.01, momentum = 0.01, verbose = True)
-    latent = gplvm.getLatentSpaceRepresentation()
-    plot(latent, data['colours'], reducedDimensions, "Iris Dataset", "Nonlinear GP-LVM")
+    gplvm.compute(reduced_dimensions, 50, max_iterations = 50, jitter = 4, learn_rate = 0.01, momentum = 0.01, verbose = True)
+    latent = gplvm.get_latent_space_representation()
+    plot(latent, data['colours'], reduced_dimensions, "Iris Dataset", "Nonlinear GP-LVM")
     
 if __name__ == "__main__":
     """
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     """
     
     #Dimension to reduce to.
-    newDimensionality = 2
+    new_dimensionality = 2
     
     #Beta parameter for Linear GP-LVM.
     beta = 2.0
@@ -155,11 +155,11 @@ if __name__ == "__main__":
     #Whether to display the Scree plot for PCA.
     scree = True
     
-    data = getIris()
+    data = get_iris()
     
-    runPCA(data, newDimensionality, scree)
-    runLinearGPLVM(data, newDimensionality, beta)
-    runNonlinearGPLVM(data, newDimensionality)
+    run_pca(data, new_dimensionality, scree)
+    run_linear_gplvm(data, new_dimensionality, beta)
+    run_nonlinear_gplvm(data, new_dimensionality)
     
-    if showPlots:
+    if show_plots:
         plt.show()
