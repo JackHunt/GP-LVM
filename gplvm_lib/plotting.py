@@ -81,7 +81,7 @@ def plot_2D(data, title, method, colours = [], save_plot = False):
         plt.savefig("2D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))
     #plt.show()
     
-def plot3D(data, title, method, colours = [], save_plot = False):
+def plot_3D(data, title, method, colours = [], save_plot = False):
     """
     Plots the data in three dimensions as a 3D scatter graph.
     Optionally, a list of per point colours can be provided.
