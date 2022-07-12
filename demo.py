@@ -1,7 +1,7 @@
-'''
+"""
 BSD 3-Clause License
 
-Copyright (c) 2017, Jack Miles Hunt
+Copyright (c) 2022, Jack Miles Hunt
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,47 +28,65 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
+import csv
 import sys
-sys.path.insert(0, './gplvm_lib')
 import urllib.request
 import os.path
-import csv
+
+from dataclasses import dataclass
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+sys.path.insert(0, './gplvm_lib')
+
 import gplvm_lib as gp
 
-iris_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
-iris_fname = 'iris.data'
+IRIS_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
+IRIS_FNAME = 'iris.data'
 
-#Control plotting here.
-show_plots = True
-save_plots = False
+@dataclass
+class IrisData:
+    features: np.array
+    colours: list[str]
 
-def get_iris(use_colouring = True):
-    """
-    Loads the four dimensional Fisher Iris dataset.
-    If the 'iris.data' file is not present in the working directory, 
+# Control plotting here.
+SHOW_PLOTS = True
+SAVE_PLOTS = False
+
+def get_iris(use_colouring: bool = True) -> IrisData:
+    """Loads the four dimensional Fisher Iris dataset.
+    If the 'iris.data' file is not present in the working directory,
     this function attempts to download it.
     The last column of the dataset(the text labels) are ommitted.
+
+    Args:
+        use_colouring (bool, optional): Whether to assign colours to
+        each class for plotting puposes. Defaults to True.
+
+    Returns:
+        IrisData: The Fisher Iris dataset.
     """
+
     iris = []
     colours = []
-    if not os.path.isfile(iris_fname):
+    if not os.path.isfile(IRIS_FNAME):
         print("Attempting to download the iris dataset.")
         try:
-            urllib.request.urlretrieve(iris_url, iris_fname)
+            urllib.request.urlretrieve(IRIS_URL, IRIS_FNAME)
         except urllib.request.URLError:
             sys.exit("Unable to download iris dataset. Quitting.")
-    
-    with open(iris_fname, newline='') as file:
-        reader = csv.reader(file, delimiter = ',')
+
+    with open(IRIS_FNAME, newline='', encoding='utf-8') as file:
+        reader = csv.reader(file, delimiter=',')
         for line in reader:
-            if len(line) != 0:
-                #Extract feature vector.
+            if len(line):
+                # Extract feature vector.
                 iris.append(list(map(float, line[0:4])))
-                #Extract class label and assign colour, if necessary.
+
+                # Extract class label and assign colour, if necessary.
                 if use_colouring:
                     if line[4] == "Iris-setosa":
                         colours.append("red")
@@ -78,88 +96,121 @@ def get_iris(use_colouring = True):
                         colours.append("blue")
                     else:
                         sys.exit("Error reading class assignments. Check iris.data")
-    
-    #Randomise order - TO-DO: make this pythonic.
-    for iter in range(0, 20):
-        randA = np.random.randint(len(iris), size = len(iris))
-        randB = np.random.randint(len(iris), size = len(iris))
-        for i in range(0, len(iris)):
-            #Permute feature vectors.
-            tmp = iris[randA[i]]
-            iris[randA[i]] = iris[randB[i]]
-            iris[randA[i]] = tmp
 
-            #Permute colours.
-            tmp = colours[randA[i]]
-            colours[randA[i]] = colours[randB[i]]
-            colours[randA[i]] = tmp
+    # Randomise order - TO-DO: make this pythonic.
+    for _ in range(0, 20):
+        n = len(iris)
+        A = np.random.randint(n, size=n)
+        B = np.random.randint(n, size=n)
+        for i in range(n):
+            # Permute feature vectors.
+            tmp = iris[A[i]]
+            iris[A[i]] = iris[B[i]]
+            iris[A[i]] = tmp
 
-    return {'features' : np.asarray(iris), 'colours' : colours}
+            # Permute colours.
+            tmp = colours[A[i]]
+            colours[A[i]] = colours[B[i]]
+            colours[A[i]] = tmp
 
-def plot(data, colours, dimensionality, title, method):
-    """
-    Helper function to reduce code duplication.
+    return IrisData(np.asarray(iris), colours)
+
+def plot(data: np.array,
+         colours: list[str],
+         dimensionality: int,
+         title: str,
+         method: str):
+    """Helper function to reduce code duplication.
     """
     if dimensionality == 1:
-        gp.plot_1D(data, title, method, save_plots)
-    elif dimensionality == 2:
-        gp.plot_2D(data, title, method, colours, save_plots)
-    elif dimensionality == 3:
-        gp.plot_3D(data, title, method, colours, save_plots)
-    else:
-        return None
-    
-def run_pca(data, reduced_dimensions, show_scree):
-    """
-    Runs standard PCA on the given dataset, optionally showing the associated
+        return gp.plot_1D(data, title, method, save_plot=SAVE_PLOTS)
+
+    if dimensionality == 2:
+        return gp.plot_2D(data, title, method, colours, save_plot=SAVE_PLOTS)
+
+    if dimensionality == 3:
+        return gp.plot_3D(data, title, method, colours, save_plot=SAVE_PLOTS)
+
+    raise ValueError("Unsupported Dimensionality.")
+
+def run_pca(data: IrisData,
+            reduced_dimensions: int,
+            show_scree: bool):
+    """Runs standard PCA on the given dataset, optionally showing the associated
     Scree plot(normalised Eigenvalues)
     """
     print("-->Running PCA.")
-    latent = gp.pca(data['features'], reduced_dimensions, show_scree, save_plots)
-    plot(latent, data['colours'], reduced_dimensions, "Iris Dataset", "PCA")
-    
-def run_linear_gplvm(data, reduced_dimensions, beta):
-    """
-    Runs the Linear Gaussian Process Latent Variable Model on the given dataset. 
+
+    latent = gp.pca(data.features,
+                    reduced_dimensions,
+                    show_scree=show_scree,
+                    save_scree=SAVE_PLOTS)
+
+    plot(latent,
+         data.colours,
+         reduced_dimensions,
+         "Iris Dataset",
+         "PCA")
+
+def run_linear_gplvm(data: IrisData,
+                     reduced_dimensions: int,
+                     beta: float):
+    """Runs the Linear Gaussian Process Latent Variable Model on the given dataset.
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
     print("-->Running Linear GP-LVM.")
-    gplvm = gp.LinearGPLVM(data['features'])
+
+    gplvm = gp.LinearGPLVM(data.features)
     gplvm.compute(reduced_dimensions, beta)
+
     latent = gplvm.get_latent_space_representation()
-    plot(latent, data['colours'], reduced_dimensions, "Iris Dataset", "Linear GP-LVM")
-    
-def run_nonlinear_gplvm(data, reduced_dimensions):
-    """
-    Runs the Nonlinear Gaussian Process Latent Variable Model on the given dataset, 
+
+    plot(latent,
+         data.colours,
+         reduced_dimensions,
+         "Iris Dataset",
+         "Linear GP-LVM")
+
+def run_nonlinear_gplvm(data: IrisData,
+                        reduced_dimensions: int):
+    """Runs the Nonlinear Gaussian Process Latent Variable Model on the given dataset,
     for a given covariance matrix generating kernel.
     The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
     """
     print("-->Running Nonlinear GP-LVM.")
-    gplvm = gp.NonlinearGPLVM(data['features'])
-    gplvm.compute(reduced_dimensions, 50, max_iterations = 50, jitter = 4, learn_rate = 0.01, momentum = 0.01, verbose = True)
+
+    gplvm = gp.NonlinearGPLVM(data.features)
+    gplvm.compute(reduced_dimensions,
+                  50,
+                  max_iterations=50,
+                  jitter=4,
+                  learn_rate=0.01,
+                  momentum=0.01,
+                  verbose=True)
+
     latent = gplvm.get_latent_space_representation()
-    plot(latent, data['colours'], reduced_dimensions, "Iris Dataset", "Nonlinear GP-LVM")
-    
+
+    plot(latent,
+         data.colours,
+         reduced_dimensions,
+         "Iris Dataset",
+         "Nonlinear GP-LVM")
+
 if __name__ == "__main__":
-    """
-    Parameters of the algorithms may be tweaked here.
-    """
-    
-    #Dimension to reduce to.
-    new_dimensionality = 2
-    
-    #Beta parameter for Linear GP-LVM.
-    beta = 2.0
-    
-    #Whether to display the Scree plot for PCA.
-    scree = True
-    
-    data = get_iris()
-    
-    run_pca(data, new_dimensionality, scree)
-    run_linear_gplvm(data, new_dimensionality, beta)
-    run_nonlinear_gplvm(data, new_dimensionality)
-    
-    if show_plots:
+    # Dimension to reduce to.
+    D = 2
+
+    # Beta parameter for Linear GP-LVM.
+    INITIAL_BETA = 2.0
+
+    # Whether to display the Scree plot for PCA.
+    SCREE = True
+
+    ds = get_iris()
+
+    run_pca(ds, D, SCREE)
+    run_linear_gplvm(ds, D, INITIAL_BETA)
+    run_nonlinear_gplvm(ds, D)
+
+    if SHOW_PLOTS:
         plt.show()
