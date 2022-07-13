@@ -1,7 +1,7 @@
-'''
+"""
 BSD 3-Clause License
 
-Copyright (c) 2017, Jack Miles Hunt
+Copyright (c) 2022, Jack Miles Hunt
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,59 +28,59 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 from gplvm import *
 
 class LinearGPLVM(GPLVM):
-    """
-    Class representing a linear Gaussian Process Latent Variable Model.
+    """Class representing a linear Gaussian Process Latent Variable Model.
     """
 
     _eig_valsYYt = np.array([])
     _eig_vecsYYt = np.array([])
     _sorted_indicesYYt = []
     
-    def __init__(self, Y):
-        """
-        LinearGPLVM class constructor.
+    def __init__(self, Y: np.array):
+        """LinearGPLVM class constructor.
+        
         See base class documentation.
         """
         super().__init__(Y)
 
     def _compute_eigendecompositionYYt(self):
-        if self._eig_valsYYt.shape[0] == 0 and self._eig_vecsYYt.shape[0] == 0:
+        if not self._eig_valsYYt.shape[0] and not self._eig_vecsYYt.shape[0]:
             self._eig_valsYYt, self._eig_vecsYYt = np.linalg.eig(self._YYt)
             self._sorted_indicesYYt = self._eig_valsYYt.argsort()[::-1]
         
-    def compute(self, reduced_dimensionality, beta):
+    def compute(self,
+                reduced_dimensionality: int,
+                beta: float):
+        """Method to compute latent spaces with a linear GP-LVM.
         """
-        Method to compute latent spaces with a linear GP-LVM.
-        """
-        #Do sanity checking in base class.
+        # Do sanity checking in base class.
         super().compute(reduced_dimensionality)
         
-        #Data dimensionality.
+        # Data dimensionality.
         D = self._Y.shape[1]
         
-        #Compute Y*Y^t if not already computed, else use cached version.
+        # Compute Y*Y^t if not already computed, else use cached version.
         self._computeYYt()
         
-        #Compute eigendecomposition of Y*Y^t and sort.
+        # Compute eigendecomposition of Y*Y^t and sort.
         self._compute_eigendecompositionYYt()
         
-        #Compute eigendecomposition of Y*Y^t and sort.
+        # Compute eigendecomposition of Y*Y^t and sort.
         eig_valsDYYt, eig_vecsDYYt = np.linalg.eig((1.0 / D) * self._YYt)
         sorted_indicesDYYt = eig_valsDYYt.argsort()[::-1]
         
-        #Construct L matrix.
+        # Construct L matrix.
         lVec = eig_valsDYYt[sorted_indicesDYYt[0:reduced_dimensionality]]
         lVec -= 1.0 / beta
         lVec = 1.0 / np.sqrt(lVec)
         L = np.diag(lVec)
         
-        #Arbitrary rotation matrix.
+        # Arbitrary rotation matrix.
         V = np.eye(reduced_dimensionality) * 5
         
-        #Finally, compute latent space representation - X = U*L*V^t.
+        # Finally, compute latent space representation - X = U*L*V^t.
         self._X = np.dot(self._eig_vecsYYt[:, self._sorted_indicesYYt[0:reduced_dimensionality]], np.dot(L, V.transpose()))

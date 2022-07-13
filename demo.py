@@ -30,6 +30,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import argparse
 import csv
 import sys
 import urllib.request
@@ -54,10 +55,6 @@ class IrisData:
     features: np.array
     colours: list[str]
 
-# Control plotting here.
-SHOW_PLOTS = True
-SAVE_PLOTS = False
-
 def get_iris(use_colouring: bool = True) -> IrisData:
     """Loads the four dimensional Fisher Iris dataset.
     If the 'iris.data' file is not present in the working directory,
@@ -81,6 +78,18 @@ def get_iris(use_colouring: bool = True) -> IrisData:
         except urllib.request.URLError:
             sys.exit("Unable to download iris dataset. Quitting.")
 
+    def _label_as_colour(label: str) -> str:
+        if label == "Iris-setosa":
+            return "red"
+
+        if label == "Iris-versicolor":
+            return "green"
+
+        if label == "Iris-virginica":
+            return "blue"
+
+        raise ValueError("Error reading class assignments. Check iris.data")
+
     with open(IRIS_FNAME, newline='', encoding='utf-8') as file:
         reader = csv.reader(file, delimiter=',')
         for line in reader:
@@ -90,14 +99,7 @@ def get_iris(use_colouring: bool = True) -> IrisData:
 
                 # Extract class label and assign colour, if necessary.
                 if use_colouring:
-                    if line[4] == "Iris-setosa":
-                        colours.append("red")
-                    elif line[4] == "Iris-versicolor":
-                        colours.append("green")
-                    elif line[4] == "Iris-virginica":
-                        colours.append("blue")
-                    else:
-                        sys.exit("Error reading class assignments. Check iris.data")
+                    colours.append(_label_as_colour(line[4]))
 
     # Randomise order.
     for _ in range(0, 20):
@@ -135,24 +137,25 @@ def plot(data: np.array,
         ValueError: If an unsupported dimensionality is provided.
     """
     if dimensionality == 1:
-        gp.plot_1D(data, title, method, save_plot=SAVE_PLOTS)
+        gp.plot_1D(data, title, method, save_plot=False)
 
     if dimensionality == 2:
-        gp.plot_2D(data, title, method, colours, save_plot=SAVE_PLOTS)
+        gp.plot_2D(data, title, method, colours, save_plot=False)
 
     if dimensionality == 3:
-        gp.plot_3D(data, title, method, colours, save_plot=SAVE_PLOTS)
+        gp.plot_3D(data, title, method, colours, save_plot=False)
 
     raise ValueError("Unsupported Dimensionality.")
 
 def run_pca(data: IrisData,
-            reduced_dimensions: int,
+            reduced_dimensions: int = 2,
             show_scree: bool = True):
     """Runs standard PCA on the Iris dataset.
 
     Args:
         data (IrisData): The Iris dataset on which to run PCA.
         reduced_dimensions (int): Target dimensionality.
+          Default is 2.
         show_scree (bool): Whether to show a plot of normalised eigenvalues.
           Default is True.
     """
@@ -161,7 +164,7 @@ def run_pca(data: IrisData,
     latent = gp.pca(data.features,
                     reduced_dimensions,
                     show_scree=show_scree,
-                    save_scree=SAVE_PLOTS)
+                    save_scree=False)
 
     plot(latent,
          data.colours,
@@ -170,14 +173,14 @@ def run_pca(data: IrisData,
          "PCA")
 
 def run_linear_gplvm(data: IrisData,
-                     reduced_dimensions: int,
+                     reduced_dimensions: int = 2,
                      beta: float = 2.0):
     """Runs the Linear Gaussian Process Latent Variable Model
        on the Iris dataset.
 
     Args:
         data (IrisData): The Iris dataset on which to run the Linear GPLVM.
-        reduced_dimensions (int): Target dimensionality.
+        reduced_dimensions (int): Target dimensionality. Default is 2.
         beta (float): The Linear GPLVM Regularizer, beta. Default is 2.0.
     """
     print("-->Running Linear GP-LVM.")
@@ -194,23 +197,37 @@ def run_linear_gplvm(data: IrisData,
          "Linear GP-LVM")
 
 def run_nonlinear_gplvm(data: IrisData,
-                        reduced_dimensions: int):
+                        reduced_dimensions: int = 2,
+                        batch_size: int = 25,
+                        max_iterations: int = 50,
+                        jitter: int = 4,
+                        learning_rate: float = 0.01,
+                        momentum: float = 0.01):
     """Runs the Nonlinear Gaussian Process Latent Variable Model on
        the Iris dataset, for a given covariance matrix generating kernel.
 
     Args:
         data (IrisData): The Iris dataset on which to run the Nonlinear GPLVM.
         reduced_dimensions (int): Target dimensionality.
+            Default is 2.
+        max_iterations (int): Upper bound on optimizer epochs.
+            Default is 50.
+        jitter (int): GP jitter factor.
+            Default is 4.
+        learning_rate (float): Optimizer learning rate/scale factor.
+            Default is 0.01.
+        momentum (float): Optimizer momentum coefficient.
+            Default is 0.01.
     """
     print("-->Running Nonlinear GP-LVM.")
 
     gplvm = gp.NonlinearGPLVM(data.features)
     gplvm.compute(reduced_dimensions,
-                  50,
-                  max_iterations=50,
-                  jitter=4,
-                  learn_rate=0.01,
-                  momentum=0.01,
+                  batch_size,
+                  max_iterations=max_iterations,
+                  jitter=jitter,
+                  learn_rate=learning_rate,
+                  momentum=momentum,
                   verbose=True)
 
     latent = gplvm.get_latent_space_representation()
@@ -222,14 +239,36 @@ def run_nonlinear_gplvm(data: IrisData,
          "Nonlinear GP-LVM")
 
 if __name__ == "__main__":
-    # Dimension to reduce to.
-    D = 2
+    # Take all config items as optional params.
+    parser = argparse.ArgumentParser(description='GPLVM Example.')
+    parser.add_argument('--reduced_dims', type=int, default=2)
+    parser.add_argument('--beta_regularizer', type=float, default=0.2)
+    parser.add_argument('--batch_size', type=int, default=25)
+    parser.add_argument('--max_iterations', type=int, default=50)
+    parser.add_argument('--learning_rate', type=float, default=0.01)
+    parser.add_argument('--momentum', type=float, default=0.01)
+    parser.add_argument('--jitter', type=int, default=4)
 
+    # Get config options for the various models.
+    args = parser.parse_args()
+    reduced_dims = args.reduced_dims
+
+    # Get the data and run the models.
     ds = get_iris()
 
-    run_pca(ds, D)
-    run_linear_gplvm(ds, D)
-    run_nonlinear_gplvm(ds, D)
+    run_pca(ds, reduced_dimensions=reduced_dims)
 
-    if SHOW_PLOTS:
-        plt.show()
+    run_linear_gplvm(ds,
+                     reduced_dimensions=reduced_dims,
+                     beta=args.beta_regularizer)
+
+    run_nonlinear_gplvm(ds,
+                        reduced_dimensions=reduced_dims,
+                        batch_size=args.batch_size,
+                        max_iterations=args.max_iterations,
+                        jitter=args.jitter,
+                        learning_rate=args.learning_rate,
+                        momentum=args.momentum)
+    
+    # Finally, plot.
+    plt.show()

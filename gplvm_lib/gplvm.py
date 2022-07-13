@@ -1,7 +1,7 @@
 """
 BSD 3-Clause License
 
-Copyright (c) 2017, Jack Miles Hunt
+Copyright (c) 2022, Jack Miles Hunt
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,49 +38,59 @@ class GPLVM(ABC):
     """
     Abstract base class for a Gaussian Process Latent Variable Model.
     Derived classes are implmented as per the following paper:
-    'Probabilistic Non-linear Principal Component Analysis with Gaussian Process Latent Variable Models'
+    'Probabilistic Non-linear Principal Component Analysis with Gaussian
+    Process Latent Variable Models'
+
     Lawrence 2005
     """
-    
-    #Original data.
+
+    # Original data.
     _Y = np.array([])
 
-    #Y*Y^t - cached Y*Yt to reduce repeated computation.
+    # Y*Y^t - cached Y*Yt to reduce repeated computation.
     _YYt = np.array([])
-    
-    #Latent space representation.
+
+    # Latent space representation.
     _X = np.array([])
-    
-    def __init__(self, Y):
+
+    def __init__(self, Y: np.array):
+        """Base class constructor.
+        Takes a data matrix and assumes that rows pertain to data
+        points and columns to variables.
+
+        Args:
+            Y (np.array): Input data.
+
+        Raises:
+            ValueError: If `Y` is empty.
         """
-        Base class constructor.
-        Takes a data matrix and assumes that rows pertain to data points and columns variables.
-        """
-        #Sanity check the data and store.
+        # Sanity check the data and store.
         if Y.shape[0] == 0:
             raise ValueError("Cannot compute a GP-LVM on an empty data matrix.")
         self._Y = Y
 
     def _computeYYt(self):
-        """
-        Computes YY^t if not already computed. Skips if already cached.
+        """Computes YY^t if not already computed. Skips if already cached.
         """
         if self._YYt.shape[0] == 0:
             self._YYt = np.dot(self._Y, self._Y.transpose())
 
-        if self._YYt.shape[0] != self._Y.shape[0] or self._YYt.shape[0] != self._Y.shape[0]:
-            raise ValueError("Mismatch between data matrix Y and YY^t. Have you changed data matrix externally?")
-        
-    def get_latent_space_representation(self):
-        """
-        Returns the most recently computed latent space representation of the data.
+        if self._YYt.shape[0] != self._Y.shape[0] or \
+            self._YYt.shape[0] != self._Y.shape[0]:
+            raise ValueError(
+                "Mismatch between data matrix Y and YY^t. "
+                "Have you changed data matrix externally?")
+
+    def get_latent_space_representation(self) -> np.array:
+        """Returns the most recently computed latent space representation of the data.
         """
         return self._X
-    
+
     @abstractmethod
-    def compute(self, reduced_dimensionality):
-        """
-        Abstract method to compute latent spaces with a GP-LVM.
+    def compute(self, reduced_dimensionality: int):
+        """Abstract method to compute latent spaces with a GP-LVM.
         """
         if reduced_dimensionality >= self._Y.shape[1]:
-            raise ValueError("Cannot reduce %s dimensional data to %d dimensions." % (self._Y.shape[1], reducedDimensionality))
+            raise ValueError(
+                f"Cannot reduce {self._Y.shape[1]} dimensional data to "
+                f"{reduced_dimensionality} dimensions.")

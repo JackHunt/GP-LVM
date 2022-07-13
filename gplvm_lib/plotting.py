@@ -1,7 +1,7 @@
-'''
+"""
 BSD 3-Clause License
 
-Copyright (c) 2017, Jack Miles Hunt
+Copyright (c) 2022, Jack Miles Hunt
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,45 +28,52 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-def plot_1D(data, title, method, save_plot = False):
+def plot_1D(data: np.array,
+            title: str,
+            method: str,
+            save_plot: bool = False):
+    """Plots data in one dimension.
     """
-    Plots data in one dimension.
-    """
-    if data.shape[0] == 0 or data.shape[1] != 1:
+    if not data.shape[0] or data.shape[1] != 1:
         raise ValueError("Incorrect dimensions of data for 1D plotting.")
 
-    #Plot.
+    # Plot.
     plt.figure()
     x = np.array(range(1, data.shape[0]+1))
     plt.plot(x, data)
     plt.xticks(x)
     plt.xlabel("Data point ID's")
     plt.ylabel("Value")
-    plt.title("1D Latent Space Representation of %s using %s" % (title, method))
+    plt.title(f"1D Latent Space Representation of {title} using {method}")
     #plt.grid(True)
-    
+
     if save_plot:
-        plt.savefig("1D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))
+        plt.savefig(
+            f"1D_latent_{title.replace(" ", "")}_"
+            f"{method.replace(" ", "")}.png")
     #plt.show()
-    
-def plot_2D(data, title, method, colours = [], save_plot = False):
-    """
-    Plots the data in two dimensions as a 2D scatter graph.
+
+def plot_2D(data: np.array,
+            title: str,
+            method: str,
+            colours: list[str] = [],
+            save_plot: bool = False):
+    """Plots the data in two dimensions as a 2D scatter graph.
     Optionally, a list of per point colours can be provided.
     """
-    if data.shape[0] == 0 or data.shape[1] != 2:
+    if not data.shape[0] or data.shape[1] != 2:
         raise ValueError("Incorrect dimensions of data for 2D plotting.")
-        
+
     x = data[:, 0]
     y = data[:, 1]
-        
-    #Plot
+
+    # Plot
     plt.figure()
     if len(colours) == data.shape[0]:
         plt.scatter(x, y, c = colours)
@@ -74,26 +81,31 @@ def plot_2D(data, title, method, colours = [], save_plot = False):
         plt.scatter(x, y)
     plt.xlabel("X Dimension")
     plt.ylabel("Y Dimension")
-    plt.title("2D Latent Space Representation of %s using %s" % (title, method))
+    plt.title(f"2D Latent Space Representation of {title} using {method}")
     #plt.grid(True)
-    
+
     if save_plot:
-        plt.savefig("2D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))
+        plt.savefig(
+            f"2D_latent_{title.replace(" ", "")}_"
+            f"{method.replace(" ", "")}.png")
     #plt.show()
-    
-def plot_3D(data, title, method, colours = [], save_plot = False):
-    """
-    Plots the data in three dimensions as a 3D scatter graph.
+
+def plot_3D(data: np.array,
+            title: str,
+            method: str,
+            colours: list[str] = [],
+            save_plot: bool = False):
+    """Plots the data in three dimensions as a 3D scatter graph.
     Optionally, a list of per point colours can be provided.
     """
-    if data.shape[0] == 0 or data.shape[1] != 3:
+    if not data.shape[0] or data.shape[1] != 3:
         raise ValueError("Incorrect dimensions of data for 3D plotting.")
-        
+
     x = data[:, 0]
     y = data[:, 1]
     z = data[:, 2]
-    
-    #Plot.
+
+    # Plot.
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     if len(colours) == data.shape[0]:
@@ -103,7 +115,10 @@ def plot_3D(data, title, method, colours = [], save_plot = False):
     ax.set_xlabel('X Dimension')
     ax.set_ylabel('Y Dimension')
     ax.set_zlabel('Z Dimension')
-    ax.set_title("3D Latent Space Representation of %s using %s" % (title, method))
-    
+    ax.set_title(
+        f"3D Latent Space Representation of {title} using {method}")
+
     if save_plot:
-        plt.savefig("3D_latent_%s_%s.png" % (title.replace(" ", ""), method.replace(" ", "")))
+        plt.savefig(
+            f"3D_latent_{title.replace(" ", "")}_"
+            f"{method.replace(" ", "")}.png")
