@@ -43,16 +43,6 @@ class GPLVM(ABC):
 
     Lawrence 2005
     """
-
-    # Original data.
-    _Y = np.array([])
-
-    # Y*Y^t - cached Y*Yt to reduce repeated computation.
-    _YYt = np.array([])
-
-    # Latent space representation.
-    _X = np.array([])
-
     def __init__(self, Y: np.array):
         """Base class constructor.
         Takes a data matrix and assumes that rows pertain to data
@@ -64,19 +54,24 @@ class GPLVM(ABC):
         Raises:
             ValueError: If `Y` is empty.
         """
-        # Sanity check the data and store.
-        if Y.shape[0] == 0:
-            raise ValueError("Cannot compute a GP-LVM on an empty data matrix.")
-        self._Y = Y
+        # Original data.
+        self.Y = Y
+
+        # Y*Y^t - cached Y*Yt to reduce repeated computation.
+        self.YYt = None
+
+        # Latent space representation.
+        self.X = None
+
 
     def _computeYYt(self):
         """Computes YY^t if not already computed. Skips if already cached.
         """
-        if self._YYt.shape[0] == 0:
-            self._YYt = np.dot(self._Y, self._Y.transpose())
+        if self.YYt is None:
+            self.YYt = np.dot(self.Y, self.Y.transpose())
 
-        if self._YYt.shape[0] != self._Y.shape[0] or \
-            self._YYt.shape[0] != self._Y.shape[0]:
+        if self.YYt.shape[0] != self.Y.shape[0] or \
+            self.YYt.shape[1] != self.Y.shape[0]:
             raise ValueError(
                 "Mismatch between data matrix Y and YY^t. "
                 "Have you changed data matrix externally?")
@@ -84,13 +79,60 @@ class GPLVM(ABC):
     def get_latent_space_representation(self) -> np.array:
         """Returns the most recently computed latent space representation of the data.
         """
-        return self._X
+        return self.X
 
     @abstractmethod
     def compute(self, reduced_dimensionality: int):
         """Abstract method to compute latent spaces with a GP-LVM.
         """
-        if reduced_dimensionality >= self._Y.shape[1]:
+        if reduced_dimensionality >= self.Y.shape[1]:
             raise ValueError(
-                f"Cannot reduce {self._Y.shape[1]} dimensional data to "
+                f"Cannot reduce {self.Y.shape[1]} dimensional data to "
                 f"{reduced_dimensionality} dimensions.")
+
+    @property
+    def Y(self):
+        return self._Y
+
+    @Y.setter
+    def Y(self, val):
+        if not val is None and not isinstance(val, np.ndarray):
+            raise ValueError("Y must be a numpy array.")
+
+        if not val is None and not val.shape[0]:
+            raise ValueError(
+                "Cannot compute a GP-LVM on an empty data matrix.")
+
+        self._Y = val
+
+    @property
+    def YYt(self):
+        return self._YYt
+
+    @YYt.setter
+    def YYt(self, val):
+        if not val is None and not isinstance(val, np.ndarray):
+            raise ValueError("YYt must be a numpy array.")
+
+        if not val is None and self.YYt and val.shape != self.YYt.shape:
+            raise ValueError(
+                "YYt cannot change shape when being reassigned.")
+
+        self._YYt = val
+
+    @property
+    def X(self):
+        return self._X
+
+    @X.setter
+    def X(self, val):
+        if not val is None and not isinstance(val, np.ndarray):
+            raise ValueError("X must be a numpy array.")
+
+        if not val is None and self.X and val.shape[0] != self.X.shape[0]:
+            raise ValueError(
+                "X cannot change it's leading dimension when being reassigned.")
+
+        self._X = val
+
+        

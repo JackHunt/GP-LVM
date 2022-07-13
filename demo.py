@@ -138,12 +138,15 @@ def plot(data: np.array,
     """
     if dimensionality == 1:
         gp.plot_1D(data, title, method, save_plot=False)
+        return
 
     if dimensionality == 2:
         gp.plot_2D(data, title, method, colours, save_plot=False)
+        return
 
     if dimensionality == 3:
         gp.plot_3D(data, title, method, colours, save_plot=False)
+        return
 
     raise ValueError("Unsupported Dimensionality.")
 

@@ -55,8 +55,8 @@ def plot_1D(data: np.array,
 
     if save_plot:
         plt.savefig(
-            f"1D_latent_{title.replace(" ", "")}_"
-            f"{method.replace(" ", "")}.png")
+            f"1D_latent_{title.replace(' ', '')}_"
+            f"{method.replace(' ', '')}.png")
     #plt.show()
 
 def plot_2D(data: np.array,
@@ -86,8 +86,8 @@ def plot_2D(data: np.array,
 
     if save_plot:
         plt.savefig(
-            f"2D_latent_{title.replace(" ", "")}_"
-            f"{method.replace(" ", "")}.png")
+            f"2D_latent_{title.replace(' ', '')}_"
+            f"{method.replace(' ', '')}.png")
     #plt.show()
 
 def plot_3D(data: np.array,
@@ -120,5 +120,5 @@ def plot_3D(data: np.array,
 
     if save_plot:
         plt.savefig(
-            f"3D_latent_{title.replace(" ", "")}_"
-            f"{method.replace(" ", "")}.png")
+            f"3D_latent_{title.replace(' ', '')}_"
+            f"{method.replace(' ', '')}.png")
