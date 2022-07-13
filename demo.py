@@ -49,6 +49,8 @@ IRIS_FNAME = 'iris.data'
 
 @dataclass
 class IrisData:
+    """A simple dataclass consisting of iris features and colour labels.
+    """
     features: np.array
     colours: list[str]
 
@@ -97,7 +99,7 @@ def get_iris(use_colouring: bool = True) -> IrisData:
                     else:
                         sys.exit("Error reading class assignments. Check iris.data")
 
-    # Randomise order - TO-DO: make this pythonic.
+    # Randomise order.
     for _ in range(0, 20):
         n = len(iris)
         A = np.random.randint(n, size=n)
@@ -120,24 +122,39 @@ def plot(data: np.array,
          dimensionality: int,
          title: str,
          method: str):
-    """Helper function to reduce code duplication.
+    """Plots the latent space representation of the data.
+
+    Args:
+        data (np.array): Iris features.
+        colours (list[str]): Class colour labels.
+        dimensionality (int): Dimensionality of the plot.
+        title (str): Title of the plot.
+        method (str): Name of the model.
+
+    Raises:
+        ValueError: If an unsupported dimensionality is provided.
     """
     if dimensionality == 1:
-        return gp.plot_1D(data, title, method, save_plot=SAVE_PLOTS)
+        gp.plot_1D(data, title, method, save_plot=SAVE_PLOTS)
 
     if dimensionality == 2:
-        return gp.plot_2D(data, title, method, colours, save_plot=SAVE_PLOTS)
+        gp.plot_2D(data, title, method, colours, save_plot=SAVE_PLOTS)
 
     if dimensionality == 3:
-        return gp.plot_3D(data, title, method, colours, save_plot=SAVE_PLOTS)
+        gp.plot_3D(data, title, method, colours, save_plot=SAVE_PLOTS)
 
     raise ValueError("Unsupported Dimensionality.")
 
 def run_pca(data: IrisData,
             reduced_dimensions: int,
-            show_scree: bool):
-    """Runs standard PCA on the given dataset, optionally showing the associated
-    Scree plot(normalised Eigenvalues)
+            show_scree: bool = True):
+    """Runs standard PCA on the Iris dataset.
+
+    Args:
+        data (IrisData): The Iris dataset on which to run PCA.
+        reduced_dimensions (int): Target dimensionality.
+        show_scree (bool): Whether to show a plot of normalised eigenvalues.
+          Default is True.
     """
     print("-->Running PCA.")
 
@@ -154,9 +171,14 @@ def run_pca(data: IrisData,
 
 def run_linear_gplvm(data: IrisData,
                      reduced_dimensions: int,
-                     beta: float):
-    """Runs the Linear Gaussian Process Latent Variable Model on the given dataset.
-    The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
+                     beta: float = 2.0):
+    """Runs the Linear Gaussian Process Latent Variable Model
+       on the Iris dataset.
+
+    Args:
+        data (IrisData): The Iris dataset on which to run the Linear GPLVM.
+        reduced_dimensions (int): Target dimensionality.
+        beta (float): The Linear GPLVM Regularizer, beta. Default is 2.0.
     """
     print("-->Running Linear GP-LVM.")
 
@@ -173,9 +195,12 @@ def run_linear_gplvm(data: IrisData,
 
 def run_nonlinear_gplvm(data: IrisData,
                         reduced_dimensions: int):
-    """Runs the Nonlinear Gaussian Process Latent Variable Model on the given dataset,
-    for a given covariance matrix generating kernel.
-    The resultant data plotted if the latent space is 1, 2 or 3 dimensional.
+    """Runs the Nonlinear Gaussian Process Latent Variable Model on
+       the Iris dataset, for a given covariance matrix generating kernel.
+
+    Args:
+        data (IrisData): The Iris dataset on which to run the Nonlinear GPLVM.
+        reduced_dimensions (int): Target dimensionality.
     """
     print("-->Running Nonlinear GP-LVM.")
 
@@ -200,16 +225,10 @@ if __name__ == "__main__":
     # Dimension to reduce to.
     D = 2
 
-    # Beta parameter for Linear GP-LVM.
-    INITIAL_BETA = 2.0
-
-    # Whether to display the Scree plot for PCA.
-    SCREE = True
-
     ds = get_iris()
 
-    run_pca(ds, D, SCREE)
-    run_linear_gplvm(ds, D, INITIAL_BETA)
+    run_pca(ds, D)
+    run_linear_gplvm(ds, D)
     run_nonlinear_gplvm(ds, D)
 
     if SHOW_PLOTS:
