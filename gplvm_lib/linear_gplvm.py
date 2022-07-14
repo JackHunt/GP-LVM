@@ -30,15 +30,15 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from gplvm import *
+import numpy as np
+
+from gplvm_lib.gplvm import GPLVM
 
 class LinearGPLVM(GPLVM):
     """Class representing a linear Gaussian Process Latent Variable Model.
     """
     def __init__(self, Y: np.array):
         """LinearGPLVM class constructor.
-        
-        See base class documentation.
         """
         super().__init__(Y)
 
@@ -46,11 +46,11 @@ class LinearGPLVM(GPLVM):
         self.YYt_eigenvectors = None
         self._sorted_indicesYYt = []
 
-    def _compute_eigendecompositionYYt(self):
+    def _compute_eigendecomposition_YYt(self):
         if self.YYt_eigenvalues is None and self.YYt_eigenvectors is None:
             self.YYt_eigenvalues, self.YYt_eigenvectors = np.linalg.eig(self.YYt)
             self._sorted_indicesYYt = self.YYt_eigenvalues.argsort()[::-1]
-        
+
     def compute(self,
                 reduced_dimensionality: int,
                 beta: float):
@@ -58,31 +58,33 @@ class LinearGPLVM(GPLVM):
         """
         # Do sanity checking in base class.
         super().compute(reduced_dimensionality)
-        
+
         # Data dimensionality.
         D = self.Y.shape[1]
-        
+
         # Compute Y*Y^t if not already computed, else use cached version.
         self._computeYYt()
-        
+
         # Compute eigendecomposition of Y*Y^t and sort.
-        self._compute_eigendecompositionYYt()
-        
+        self._compute_eigendecomposition_YYt()
+
         # Compute eigendecomposition of Y*Y^t and sort.
         eig_valsDYYt, eig_vecsDYYt = np.linalg.eig((1.0 / D) * self.YYt)
         sorted_indicesDYYt = eig_valsDYYt.argsort()[::-1]
-        
+
         # Construct L matrix.
-        lVec = eig_valsDYYt[sorted_indicesDYYt[0:reduced_dimensionality]]
-        lVec -= 1.0 / beta
-        lVec = 1.0 / np.sqrt(lVec)
-        L = np.diag(lVec)
-        
+        l_vec = eig_valsDYYt[sorted_indicesDYYt[0:reduced_dimensionality]]
+        l_vec -= 1.0 / beta
+        l_vec = 1.0 / np.sqrt(l_vec)
+        L = np.diag(l_vec)
+
         # Arbitrary rotation matrix.
         V = np.eye(reduced_dimensionality) * 5
-        
+
         # Finally, compute latent space representation - X = U*L*V^t.
-        self.X = np.dot(self.YYt_eigenvectors[:, self._sorted_indicesYYt[0:reduced_dimensionality]], np.dot(L, V.transpose()))
+        self.X = np.dot(
+            self.YYt_eigenvectors[:, self._sorted_indicesYYt[0:reduced_dimensionality]],
+            np.dot(L, V.transpose()))
 
     @property
     def YYt_eigenvalues(self):
@@ -95,7 +97,7 @@ class LinearGPLVM(GPLVM):
 
         if not val is None and self.YYt_eigenvalues and val.shape != self.YYt_eigenvalues.shape:
             raise ValueError(
-                "YYt_eigenvalues cannot change shape when being reassigned.")  
+                "YYt_eigenvalues cannot change shape when being reassigned.")
 
         self._eigenvalues_YYt = val
 
@@ -110,6 +112,6 @@ class LinearGPLVM(GPLVM):
 
         if not val is None and self.YYt_eigenvectors and val.shape != self.YYt_eigenvectors.shape:
             raise ValueError(
-                "YYt_eigenvectors cannot change shape when being reassigned.")  
+                "YYt_eigenvectors cannot change shape when being reassigned.")
 
         self._eigenvectors_YYt = val

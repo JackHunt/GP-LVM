@@ -30,8 +30,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from kernels import *
-from linear_gplvm import LinearGPLVM
-from nonlinear_gplvm import NonlinearGPLVM
-from pca import pca
-from plotting import *
+from gplvm_lib import kernels
+from gplvm_lib import linear_gplvm
+from gplvm_lib import nonlinear_gplvm
+from gplvm_lib import pca
+from gplvm_lib import plotting

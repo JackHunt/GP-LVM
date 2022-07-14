@@ -36,93 +36,222 @@ import numpy as np
 class Kernel(ABC):
     """Abstract base class for covariance kernels.
     """
-    
-    # In derived classes this will be a list of hyperparameters.
-    hyperparameters = []
-
-    def __init__(self, hyper_params):
+    def __init__(self, hyperparameters: dict[str, float]):
         """Base Kernel constructor. Provides limited sanity checking.
-        """
-        if not hyper_params:
-            raise ValueError("Must specify hyperparameters for child kernel class.")
-        self.hyperparameters = hyper_params
 
-    def __check_valid(self, a, b, params):
+        Args:
+            hyperparameters (dict[str, float]): A dictionary of Kernel Hyperparameters.
+
+        Raises:
+            ValueError: If `hyperparameters` is `None`.
+        """        
+        if not hyperparameters:
+            raise ValueError(
+                "Must specify hyperparameter dictionary for child kernel class.")
+
+        self._hyperparameters = hyperparameters
+
+    def __check_valid(self,
+                      a: np.array,
+                      b: np.array):
         """Checks that two vectors provided to a kernel are a valid combination.
         Sanity checks shapes.
+
+        Args:
+            a (np.array): An n-dimensional vector.
+            b (np.array): An n-dimensional vector.
+
+        Raises:
+            ValueError: If vector dimensions are mismatched.
         """
         if a.shape[0] == 0 or b.shape[0] == 0 or a.shape[0] != b.shape[0]:
             raise ValueError(
-                "Kernel input vector dimension error. Check input vectors to kernel.")
-
-        for var in params:
-            if var not in self.hyperparameters:
-                raise ValueError(
-                    f"Kernel does not contain hyperparameter '{var}'")
+                "Kernel input vector dimension mismatch. "
+                f"Vector a has shape {a.shape} and Vector b "
+                f"has shape {b.shape}")
 
     @abstractmethod
-    def f(self, a, b, params):
-        """Abstract method to evaluate a covariance matrix entry for two given vectors and hyperparameter set.
+    def f(self,
+          a: np.array,
+          b: np.array):
+        """Abstract method to evaluate a covariance matrix entry for two
+        given vectors and hyperparameter set.
+
+        Args:
+            a (np.array): An n-dimensional vector.
+            b (np.array): An n-dimensional vector.
         """
-        self.__check_valid(a, b, params)
+        self.__check_valid(a, b)
 
     @abstractmethod
-    def df(self, a, b, params):
-        """Abstract method to evaluate a covariance matrix derivative entry for two given vectors and hyperparameter set.
+    def df(self,
+           a: np.array,
+           b: np.array):
+        """Abstract method to evaluate a covariance matrix Jacobian entry for
+        two given vectors and hyperparameter set.
+
+        Args:
+            a (np.array): An n-dimensional vector.
+            b (np.array): An n-dimensional vector.
         """
-        self.__check_valid(a, b, params)
+        self.__check_valid(a, b)
+
+    def _hyperparameter_check(self, hyp_name: str):
+        """Verifies that a given hyperparemeter belongs to the kernel instance.
+
+        Args:
+            hyp_name (str): Name of the hyperparameter.
+
+        Raises:
+            ValueError: If the hyperparameter is unknown to the Kernel.
+        """        
+        if not hyp_name in self.hyperparameters:
+            raise ValueError(
+                f"{hyp_name} is not a valid hyperparameter of this kernel.")
+
+    @property
+    def hyperparameters(self):
+        return self._hyperparameters
+
+    @hyperparameters.setter
+    def hyperparameters(self, val):
+        if len(val) != len(self.hyperparameters):
+            raise ValueError(
+                "Inconsistent hyperparameter count. This kernel has "
+                f"{len(self.hyperparameters)} hyperparameters.")
+
+        for k in val:
+            self._hyperparameter_check(k)
+
+        self._hyperparameters = val
+
+    def set_hyperparameter(self,
+                           hyp_name: str,
+                           val: float):
+        """Sets the value of a hyperparameter.
+
+        Args:
+            hyp_name (str): The name of the hyperparameter to update.
+            val (float): The updated value of the hyperparameter.
+        """        
+        self._hyperparameter_check(hyp_name)
+        self.hyperparameters[hyp_name] = val
 
 class RadialBasisFunction(Kernel):
     """Radial Basis Function kernel.
     """
-
-    __delta_dist = 1e-5
-
-    def __init__(self):
+    def __init__(self,
+                 theta_1:float = 2.0,
+                 theta_2:float = 2.0,
+                 theta_3:float = 2.0,
+                 theta_4:float = 2.0,
+                 delta_distance:float = 1e-5):
         """Constructs a new Radial Basis Function.
-        Calls super class constructor for sanity checking.
-        """
-        super().__init__(['theta1', 'theta2', 'theta3', 'theta4'])
 
-    def __delta(self, dist: float):
-        if dist < self.__delta_dist:
+        Args:
+            theta_1 (float, optional): Hyperparameter. Defaults to 2.0.
+            theta_2 (float, optional): Hyperparameter. Defaults to 2.0.
+            theta_3 (float, optional): Hyperparameter. Defaults to 2.0.
+            theta_4 (float, optional): Hyperparameter. Defaults to 2.0.
+            delta_distance (float, optional): Delta function tolerance. Defaults to 1e-5.
+        """        
+        self.delta_distance = delta_distance
+
+        super().__init__({
+            'theta_1': theta_1,
+            'theta_2': theta_2,
+            'theta_3': theta_3,
+            'theta_4': theta_4
+        })
+
+    def _delta(self, dist: float) -> float:
+        """Delta Function.
+
+        Args:
+            dist (float): Input value.
+
+        Returns:
+            float: Output Value of 1.0 or 0.0.
+        """        
+        if dist < self.delta_distance:
             return 1.0
         return 0.0
 
     def f(self,
           a: np.array,
-          b: np.array,
-          params: dict[str, float]):
-        """Evaluates the Radial Basis Function for some combination of vectors and set of hyperparameters.
-        Calls on base class for sanity checking.
-        """
-        super().f(a, b, params)
+          b: np.array) -> float:
+        """Evaluates the Radial Basis Function for some combination of
+        vectors and set of hyperparameters.
+
+        Args:
+            a (np.array): An n-dimensional vector.
+            b (np.array): An n-dimensional vector.
+
+        Returns:
+            float: _description_
+        """        
+        super().f(a, b)
         diff = a - b
         dist = np.dot(diff.transpose(), diff)
-        t1 = params['theta1'] * np.exp((-params['theta2'] / 2.0) * dist)
-        t2 = params['theta3'] + params['theta4'] * self.__delta(dist)
-        return t1 + t2
+        t_1 = self.theta_1 * np.exp((-self.theta_2 / 2.0) * dist)
+        t_2 = self.theta_3 + self.theta_4 * self._delta(dist)
+        return t_1 + t_2
 
     def df(self,
            a: np.array,
-           b: np.array,
-           params: dict[str, float]):
-        """Computes partial derivatives of RBF.
-        Again, calls super class for sanity checking.
-        """
-        super().df(a, b, params)
+           b: np.array) -> dict[str, float]:
+        """Computes partial derivatives of the RBF.
+
+        Args:
+            a (np.array): An n-dimensional vector.
+            b (np.array): An n-dimensional vector.
+
+        Returns:
+            dict[str, float]: Gradient value.
+        """        
+        super().df(a, b)
+
         diff = a - b
         dist = np.dot(diff.transpose(), diff)
-        dFdS1 = np.exp(-0.5 * params['theta2'] * dist)
-        dFdS2 = params['theta1'] * dist * np.exp(-0.5 * params['theta2'] * dist)
-        dFdS3 = 1.0
-        dFdS4 = self.__delta(dist)
-        dFdB = -1.0 * params['theta1'] * params['theta2'] * (a - b) * np.exp(-0.5 * params['theta2'] * dist)
+
+        df_ds_1 = np.exp(-0.5 * self.theta_2 * dist)
+        df_ds_2 = self.theta_1 * dist * df_ds_1
+        df_ds_3 = 1.0
+        df_ds_4 = self._delta(dist)
+
+        df_db = -1.0 * self.theta_1 * self.theta_2 * diff * df_ds_1
 
         return {
-            'b' : dFdB,
-            'theta1' : dFdS1,
-            'theta2' : dFdS2,
-            'theta3' : dFdS3,
-            'theta4' : dFdS4
+            'b' : df_db,
+            'theta_1' : df_ds_1,
+            'theta_2' : df_ds_2,
+            'theta_3' : df_ds_3,
+            'theta_4' : df_ds_4
         }
+
+    @property
+    def delta_distance(self):
+        return self._delta_distance
+
+    @delta_distance.setter
+    def delta_distance(self, val):
+        if val <= 0.0:
+            raise ValueError("delta_distance must be nonzero and nonnegative.")
+
+        self._delta_distance = val
+
+    @property
+    def theta_1(self):
+        return self.hyperparameters['theta_1']
+
+    @property
+    def theta_2(self):
+        return self.hyperparameters['theta_2']
+
+    @property
+    def theta_3(self):
+        return self.hyperparameters['theta_3']
+
+    @property
+    def theta_4(self):
+        return self.hyperparameters['theta_4']

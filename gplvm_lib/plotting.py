@@ -34,7 +34,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-def plot_1D(data: np.array,
+def plot_1d(data: np.array,
             title: str,
             method: str,
             save_plot: bool = False):
@@ -59,7 +59,7 @@ def plot_1D(data: np.array,
             f"{method.replace(' ', '')}.png")
     #plt.show()
 
-def plot_2D(data: np.array,
+def plot_2d(data: np.array,
             title: str,
             method: str,
             colours: list[str] = [],
@@ -90,7 +90,7 @@ def plot_2D(data: np.array,
             f"{method.replace(' ', '')}.png")
     #plt.show()
 
-def plot_3D(data: np.array,
+def plot_3d(data: np.array,
             title: str,
             method: str,
             colours: list[str] = [],

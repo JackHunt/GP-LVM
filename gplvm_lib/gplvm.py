@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from abc import ABC, abstractmethod
 import numpy as np
-from kernels import *
 
 class GPLVM(ABC):
     """
@@ -66,7 +65,10 @@ class GPLVM(ABC):
 
     def _computeYYt(self):
         """Computes YY^t if not already computed. Skips if already cached.
-        """
+
+        Raises:
+            ValueError: If YY^t is None or is misshapen.
+        """        
         if self.YYt is None:
             self.YYt = np.dot(self.Y, self.Y.transpose())
 
@@ -78,12 +80,22 @@ class GPLVM(ABC):
 
     def get_latent_space_representation(self) -> np.array:
         """Returns the most recently computed latent space representation of the data.
-        """
+
+        Returns:
+            np.array: Latent space embedding.
+        """        
         return self.X
 
     @abstractmethod
     def compute(self, reduced_dimensionality: int):
         """Abstract method to compute latent spaces with a GP-LVM.
+
+        Args:
+            reduced_dimensionality (int): Target dimensionality.
+
+        Raises:
+            ValueError: If the target dimensionality is greater than, or equal to
+            that of the input data.
         """
         if reduced_dimensionality >= self.Y.shape[1]:
             raise ValueError(
@@ -134,5 +146,3 @@ class GPLVM(ABC):
                 "X cannot change it's leading dimension when being reassigned.")
 
         self._X = val
-
-        

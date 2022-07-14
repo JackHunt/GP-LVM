@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import argparse
 import csv
-import sys
 import urllib.request
 import os.path
 
@@ -40,8 +39,6 @@ from dataclasses import dataclass
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.insert(0, './gplvm_lib')
 
 import gplvm_lib as gp
 
@@ -76,7 +73,7 @@ def get_iris(use_colouring: bool = True) -> IrisData:
         try:
             urllib.request.urlretrieve(IRIS_URL, IRIS_FNAME)
         except urllib.request.URLError:
-            sys.exit("Unable to download iris dataset. Quitting.")
+            raise RuntimeError("Unable to download Iris data.")
 
     def _label_as_colour(label: str) -> str:
         if label == "Iris-setosa":
@@ -137,15 +134,15 @@ def plot(data: np.array,
         ValueError: If an unsupported dimensionality is provided.
     """
     if dimensionality == 1:
-        gp.plot_1D(data, title, method, save_plot=False)
+        gp.plotting.plot_1d(data, title, method, save_plot=False)
         return
 
     if dimensionality == 2:
-        gp.plot_2D(data, title, method, colours, save_plot=False)
+        gp.plotting.plot_2d(data, title, method, colours, save_plot=False)
         return
 
     if dimensionality == 3:
-        gp.plot_3D(data, title, method, colours, save_plot=False)
+        gp.plotting.plot_3d(data, title, method, colours, save_plot=False)
         return
 
     raise ValueError("Unsupported Dimensionality.")
@@ -164,10 +161,10 @@ def run_pca(data: IrisData,
     """
     print("-->Running PCA.")
 
-    latent = gp.pca(data.features,
-                    reduced_dimensions,
-                    show_scree=show_scree,
-                    save_scree=False)
+    latent = gp.pca.pca(data.features,
+                        reduced_dimensions,
+                        show_scree=show_scree,
+                        save_scree=False)
 
     plot(latent,
          data.colours,
@@ -188,7 +185,7 @@ def run_linear_gplvm(data: IrisData,
     """
     print("-->Running Linear GP-LVM.")
 
-    gplvm = gp.LinearGPLVM(data.features)
+    gplvm = gp.linear_gplvm.LinearGPLVM(data.features)
     gplvm.compute(reduced_dimensions, beta)
 
     latent = gplvm.get_latent_space_representation()
@@ -224,7 +221,7 @@ def run_nonlinear_gplvm(data: IrisData,
     """
     print("-->Running Nonlinear GP-LVM.")
 
-    gplvm = gp.NonlinearGPLVM(data.features)
+    gplvm = gp.nonlinear_gplvm.NonlinearGPLVM(data.features)
     gplvm.compute(reduced_dimensions,
                   batch_size,
                   max_iterations=max_iterations,
@@ -272,6 +269,6 @@ if __name__ == "__main__":
                         jitter=args.jitter,
                         learning_rate=args.learning_rate,
                         momentum=args.momentum)
-    
+
     # Finally, plot.
     plt.show()
