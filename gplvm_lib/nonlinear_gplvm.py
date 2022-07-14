@@ -44,8 +44,12 @@ class NonlinearGPLVM(GPLVM):
     def __init__(self,
                  Y: np.array,
                  kernel:Kernel = RadialBasisFunction()):
-        """NonlinearGPLVM class constructor.
-        See base class documentation.
+        """Construct a Nonlinear GPLVM.
+
+        Args:
+            Y (np.array): Input Data.
+            kernel (Kernel, optional): Kernel to use for building covariance matrices.
+                Defaults to RadialBasisFunction().
         """
         super().__init__(Y)
 
@@ -66,8 +70,21 @@ class NonlinearGPLVM(GPLVM):
                 verbose: bool = True,
                 do_latent: bool = True,
                 do_hyper: bool = True):
-        """Method to compute latent spaces with a nonlinear GP-LVM.
+        """Method to compute a latent space embedding with a Nonlinear GP-LVM.
         Training is performed using Stochatic Gradient Descent.
+
+        Args:
+            reduced_dimensionality (int): Target dimensionality of the latent space.
+            batch_size (int): SGD batch size.
+            jitter (int, optional): GP jitter factor (for conditioning). Defaults to 1.
+            max_iterations (int, optional): Maximum SGD iterations. Defaults to 150.
+            min_step (float, optional): Minimum gradient step magnitude to indicate convergence.
+                Defaults to 1e-6.
+            learn_rate (float, optional): SGD learning rate. Defaults to 0.001.
+            momentum (float, optional): SGD momentum term. Defaults to 0.001.
+            verbose (bool, optional): Whether to print training stats. Defaults to True.
+            do_latent (bool, optional): Optimise the latent space embedding. Defaults to True.
+            do_hyper (bool, optional): Optimise the Kernel hyperparameters. Defaults to True.
         """
         # Do sanity checking in base class.
         super().compute(reduced_dimensionality)
@@ -166,7 +183,8 @@ class NonlinearGPLVM(GPLVM):
         grads = self._energy_grad(K_inv)
 
         # Generate random mini batch row id's.
-        batch_ids = np.random.randint(self.X.shape[0], size=min(self.X.shape[0], batch_size)) if batch_size != self.X.shape[0] else range(self.X.shape[0])
+        batch_ids = np.random.randint(self.X.shape[0], size=min(self.X.shape[0], batch_size)) \
+            if batch_size != self.X.shape[0] else range(self.X.shape[0])
 
         # Process mini batch.
         latent_sum_sq = 0.0

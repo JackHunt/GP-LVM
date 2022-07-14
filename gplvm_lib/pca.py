@@ -38,8 +38,22 @@ def pca(X: np.array,
         show_scree: bool = False,
         save_scree: bool = False) -> np.array:
     """Performs Principal Component Analysis for data dimensionality reduction.
-    Assumes that rows pertain to data points and columns to variables.
-    """
+       Assumes that rows pertain to data points and columns to variables.
+
+    Args:
+        X (np.array): Input data.
+        num_principal_components (int): Number of principal components to take.
+        show_scree (bool, optional): Whether to display a scree plot. Defaults to False.
+        save_scree (bool, optional): Whether to save a scree plot. Defaults to False.
+
+    Raises:
+        ValueError: If data array `X` is empty.
+        ValueError: If the number of requested principal components is greater than the
+        dimensionality of the data (along the feature axis).
+
+    Returns:
+        np.array: _description_
+  """    
     # Do some sanity checking.
     if not X.shape[0]:
         raise ValueError("Cannot perform PCA on an empty matrix.")

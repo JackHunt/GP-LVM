@@ -39,6 +39,15 @@ def plot_1d(data: np.array,
             method: str,
             save_plot: bool = False):
     """Plots data in one dimension.
+
+    Args:
+        data (np.array): Data to plot.
+        title (str): Title of the plot.
+        method (str): Name of the model that generated the data.
+        save_plot (bool, optional): Whether to save the plot to disk. Defaults to False.
+
+    Raises:
+        ValueError: If there is no data to plot.
     """
     if not data.shape[0] or data.shape[1] != 1:
         raise ValueError("Incorrect dimensions of data for 1D plotting.")
@@ -65,7 +74,16 @@ def plot_2d(data: np.array,
             colours: list[str] = [],
             save_plot: bool = False):
     """Plots the data in two dimensions as a 2D scatter graph.
-    Optionally, a list of per point colours can be provided.
+
+    Args:
+        data (np.array): Data to plot.
+        title (str): Title of the plot.
+        method (str): Name of the model that generated the data.
+        colours (list[str]): List of colour class labels.
+        save_plot (bool, optional): Whether to save the plot to disk. Defaults to False.
+
+    Raises:
+        ValueError: If there is no data to plot.
     """
     if not data.shape[0] or data.shape[1] != 2:
         raise ValueError("Incorrect dimensions of data for 2D plotting.")
@@ -96,7 +114,16 @@ def plot_3d(data: np.array,
             colours: list[str] = [],
             save_plot: bool = False):
     """Plots the data in three dimensions as a 3D scatter graph.
-    Optionally, a list of per point colours can be provided.
+
+    Args:
+        data (np.array): Data to plot.
+        title (str): Title of the plot.
+        method (str): Name of the model that generated the data.
+        colours (list[str]): List of colour class labels.
+        save_plot (bool, optional): Whether to save the plot to disk. Defaults to False.
+
+    Raises:
+        ValueError: If there is no data to plot.
     """
     if not data.shape[0] or data.shape[1] != 3:
         raise ValueError("Incorrect dimensions of data for 3D plotting.")

@@ -38,7 +38,10 @@ class LinearGPLVM(GPLVM):
     """Class representing a linear Gaussian Process Latent Variable Model.
     """
     def __init__(self, Y: np.array):
-        """LinearGPLVM class constructor.
+        """Construct a Linear GPLVM (Probabilistic PCA)
+
+        Args:
+            Y (np.array): Input Data.
         """
         super().__init__(Y)
 
@@ -54,8 +57,12 @@ class LinearGPLVM(GPLVM):
     def compute(self,
                 reduced_dimensionality: int,
                 beta: float):
-        """Method to compute latent spaces with a linear GP-LVM.
-        """
+        """Method to compute a latent space embedding with a linear GP-LVM.
+
+        Args:
+            reduced_dimensionality (int): Target dimensionality of the latebt space.
+            beta (float): Regularizer.
+        """        
         # Do sanity checking in base class.
         super().compute(reduced_dimensionality)
 
